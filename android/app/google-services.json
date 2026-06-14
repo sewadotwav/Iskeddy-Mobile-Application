@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "286725764834",
+    "project_id": "iskeddy",
+    "storage_bucket": "iskeddy.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:286725764834:android:99cdefeaba13318af7d0bb",
+        "android_client_info": {
+          "package_name": "com.iskeddy.iskeddy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCVaBfQfuMqBvGEohT97NEBMLZqms6PCiI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
