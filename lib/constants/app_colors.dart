@@ -1,36 +1,37 @@
 import 'package:flutter/material.dart';
 
-/// Fixed palette of 9 colors available for course blocks.
-/// Students select one of these when creating/editing a course.
+const Color accentColor = Color(0xFF040505);
+
 const List<Color> courseColors = [
-  Color(0xFFF9E9D0), // Light Orange
-  Color(0xFFFFC498), // Pastel Orange
-  Color(0xFFC5AB93), // Gray Orange
-  Color(0xFFFEEDA8), // Light Yellow
-  Color(0xFFB7CBC9), // Pastel Gray Turquoise
-  Color(0xFFFFA726), // Light Red (orange-leaning)
-  Color(0xFFC0B7CB), // Pastel Gray Lavender
-  Color(0xFFC6D899), // Pastel Gray Yellow-Green
-  Color(0xFFFFACAC), // Light Red (pink-leaning)
+  Color(0xFFCDC5FA), // Lavender
+  Color(0xFFBDDBD9), // Mint / Seafoam
+  Color(0xFFC4E6FF), // Sky Blue
+  Color(0xFFE4E0B6), // Khaki / Olive Light
+  Color(0xFFF9CFFF), // Orchid Pink
+  Color(0xFFFDF6A8), // Pale Yellow
+  Color(0xFFFFE8C4), // Peach
+  Color(0xFFE4BEAB), // Rosy Tan
+  Color(0xFFFDBDD2), // Pink
+  Color(0xFFBEE89D), // Light Green
 ];
 
-/// Use these when saving `colorHex` to Firestore.
 const List<String> courseColorHexValues = [
-  '#F9E9D0',
-  '#FFC498',
-  '#C5AB93',
-  '#FEEDA8',
-  '#B7CBC9',
-  '#FFA726',
-  '#C0B7CB',
-  '#C6D899',
-  '#FFACAC',
+  '#CDC5FA',
+  '#BDDBD9',
+  '#C4E6FF',
+  '#E4E0B6',
+  '#F9CFFF',
+  '#FDF6A8',
+  '#FFE8C4',
+  '#E4BEAB',
+  '#FDBDD2',
+  '#BEE89D',
 ];
 
 class AppPalette {
-  static const Color background = Color(0xFFF5F5F0);
+  static const Color background = Color(0xFFFFFFFF);
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color textPrimary = Color(0xFF2E2E2E);
+  static const Color textPrimary = Color(0xFF040505);
   static const Color textSecondary = Color(0xFF8A8A8A);
   static const Color divider = Color(0xFFE0E0E0);
 }

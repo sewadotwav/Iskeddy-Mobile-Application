@@ -1,7 +1,4 @@
-
 class AppStrings {
-  // ── Toast Messages ─────────────────────────────────────────
-
   static const String scheduleCreated = 'Schedule created';
   static const String scheduleRenamed = 'Schedule renamed';
   static const String schedulePinned = 'Set as default timetable';
@@ -13,29 +10,31 @@ class AppStrings {
   static String courseRemoved(String title) => '$title removed';
   static String schedulesDeleted(int count) => '$count schedules deleted';
 
-  // ── Confirmation Dialogue Messages ──────────────────────────
-
-  static const String deleteScheduleTitle = 'Delete Schedule?';
+  static const String deleteScheduleTitle = 'Delete this schedule?';
   static const String deleteScheduleMessage =
-      'Delete this schedule? This cannot be undone.';
+      'This cannot be undone. All courses within this schedule will be permanently removed.';
 
-  static String bulkDeleteMessage(int count) =>
-      'Delete $count schedules? This cannot be undone.';
+  static String bulkDeleteTitle(int count) => 'Delete $count schedules?';
+  static const String bulkDeleteMessage =
+      'This cannot be undone. All courses within these schedules will be permanently removed.';
 
-  static String deleteCourseMessage(String title) =>
-      'Remove $title from this schedule? This cannot be undone.';
-
-  // ── Dialogue Button Labels ──────────────────────────────────
+  static String deleteCourseTitle(String title) => 'Remove $title?';
+  static const String deleteCourseMessage = 'This cannot be undone.';
 
   static const String cancel = 'Cancel';
   static const String delete = 'Delete';
-  static const String remove = 'Remove';
+  static const String create = 'Create';
 
-  // ── Empty States ─────────────────────────────────────────────
-
-  static const String noPinnedSchedule =
-      'No default schedule set. Pin one from your schedules.';
-  static const String noSchedules = 'No schedules yet. Tap + to create one.';
-  static const String noCourses = 'Tap + to add your first course';
+  static const String noPinnedScheduleTitle = 'No default schedule set.';
+  static const String noPinnedScheduleSubtitle = 'Pin one from your schedules.';
   static const String goToSchedules = 'Go to Schedules';
+  static const String noSchedules = 'No schedules yet. Tap + to create one.';
+  static const String noCoursesTitle = 'No courses yet.';
+  static const String noCoursesSubtitle = 'Tap + to add your first course.';
+  static const String addCourse = '+ Add Course';
+  static String noClassesToday() => 'No classes scheduled for today.';
+  static const String breakLabel = 'Break';
+
+  static const String newScheduleTitle = 'Name Your Schedule';
+  static const String newSchedulePlaceholder = 'e.g. Fall Semester 2024';
 }

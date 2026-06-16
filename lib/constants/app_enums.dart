@@ -5,11 +5,10 @@ enum ClassMode {
 }
 
 extension ClassModeLabel on ClassMode {
-  /// dropdown.
   String get label {
     switch (this) {
       case ClassMode.onsite:
-        return 'Onsite';
+        return 'In-Person';
       case ClassMode.synchronous:
         return 'Synchronous';
       case ClassMode.asynchronous:
@@ -17,7 +16,6 @@ extension ClassModeLabel on ClassMode {
     }
   }
 
-  /// Value stored in Firestore (lowercase).
   String get value {
     switch (this) {
       case ClassMode.onsite:
