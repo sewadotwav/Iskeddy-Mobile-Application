@@ -53,10 +53,10 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCVaBfQfuMqBvGEohT97NEBMLZqms6PCiI',
-    appId: '1:286725764834:android:99cdefeaba13318af7d0bb',
-    messagingSenderId: '286725764834',
-    projectId: 'iskeddy',
-    storageBucket: 'iskeddy.firebasestorage.app',
-  );
+  apiKey: String.fromEnvironment('FIREBASE_ANDROID_API_KEY'),
+  appId: String.fromEnvironment('FIREBASE_ANDROID_APP_ID'),
+  messagingSenderId: String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'),
+  projectId: String.fromEnvironment('FIREBASE_PROJECT_ID'),
+  storageBucket: String.fromEnvironment('FIREBASE_STORAGE_BUCKET'),
+);
 }

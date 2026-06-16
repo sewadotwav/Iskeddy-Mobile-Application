@@ -8,7 +8,7 @@ extension ClassModeLabel on ClassMode {
   String get label {
     switch (this) {
       case ClassMode.onsite:
-        return 'In-Person';
+        return 'Onsite';
       case ClassMode.synchronous:
         return 'Synchronous';
       case ClassMode.asynchronous:
