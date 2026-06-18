@@ -603,12 +603,12 @@ Target: Android 12 physical device.
 | 4 | Device ID service + test | Complete |
 | 5 | Firestore service (all CRUD methods) | Complete |
 
-### Phase 2 — Navigation Shell
+### Phase 2 — Navigation Shell 
 **Batch 6** — App shell & bottom navigation
-1. Create `lib/app.dart` with `MaterialApp`, named routes for Screen 1, Screen 2, Screen 3
-2. Build the 2-tab bottom navigation bar with `IndexedStack` wrapping Screen 1 and Screen 2
-3. Screen 3 registered as a pushed route, not a tab
-4. Placeholder screens for all three, confirm navigation works on device
+1. Create `lib/app.dart` with `MaterialApp`, named routes for Screen 1, Screen 2, Screen 3 | Complete |
+2. Build the 2-tab bottom navigation bar with `IndexedStack` wrapping Screen 1 and Screen 2 | Complete | 
+3. Screen 3 registered as a pushed route, not a tab | Complete |
+4. Placeholder screens for all three, confirm navigation works on device | Complete |
 
 ### Phase 3 — Shared Components
 **Batch 7** — `AppPill`, `CircularIconButton`, `ConfirmDialog`, `AppToast` — build these | Complete |
