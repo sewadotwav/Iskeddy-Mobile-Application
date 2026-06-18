@@ -68,6 +68,8 @@ flutter:
   # assets:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/images/app_logo.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -94,3 +96,47 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+  fonts:
+    - family: ZalandoSansSemiExpanded
+      fonts:
+        - asset: assets/Zalando_Sans_SemiExpanded/static/ZalandoSansSemiExpanded-ExtraLight.ttf
+          weight: 200
+        - asset: assets/Zalando_Sans_SemiExpanded/static/ZalandoSansSemiExpanded-ExtraLightItalic.ttf
+          weight: 200
+          style: italic
+        - asset: assets/Zalando_Sans_SemiExpanded/static/ZalandoSansSemiExpanded-Light.ttf
+          weight: 300
+        - asset: assets/Zalando_Sans_SemiExpanded/static/ZalandoSansSemiExpanded-LightItalic.ttf
+          weight: 300
+          style: italic
+        - asset: assets/Zalando_Sans_SemiExpanded/static/ZalandoSansSemiExpanded-Regular.ttf
+          weight: 400
+        - asset: assets/Zalando_Sans_SemiExpanded/static/ZalandoSansSemiExpanded-Italic.ttf
+          weight: 400
+          style: italic
+        - asset: assets/Zalando_Sans_SemiExpanded/static/ZalandoSansSemiExpanded-Medium.ttf
+          weight: 500
+        - asset: assets/Zalando_Sans_SemiExpanded/static/ZalandoSansSemiExpanded-MediumItalic.ttf
+          weight: 500
+          style: italic
+        - asset: assets/Zalando_Sans_SemiExpanded/static/ZalandoSansSemiExpanded-SemiBold.ttf
+          weight: 600
+        - asset: assets/Zalando_Sans_SemiExpanded/static/ZalandoSansSemiExpanded-SemiBoldItalic.ttf
+          weight: 600
+          style: italic
+        - asset: assets/Zalando_Sans_SemiExpanded/static/ZalandoSansSemiExpanded-Bold.ttf
+          weight: 700
+        - asset: assets/Zalando_Sans_SemiExpanded/static/ZalandoSansSemiExpanded-BoldItalic.ttf
+          weight: 700
+          style: italic
+        - asset: assets/Zalando_Sans_SemiExpanded/static/ZalandoSansSemiExpanded-ExtraBold.ttf
+          weight: 800
+        - asset: assets/Zalando_Sans_SemiExpanded/static/ZalandoSansSemiExpanded-ExtraBoldItalic.ttf
+          weight: 800
+          style: italic
+        - asset: assets/Zalando_Sans_SemiExpanded/static/ZalandoSansSemiExpanded-Black.ttf
+          weight: 900
+        - asset: assets/Zalando_Sans_SemiExpanded/static/ZalandoSansSemiExpanded-BlackItalic.ttf
+          weight: 900
+          style: italic

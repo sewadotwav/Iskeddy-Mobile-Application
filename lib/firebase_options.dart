@@ -60,3 +60,4 @@ class DefaultFirebaseOptions {
   storageBucket: String.fromEnvironment('FIREBASE_STORAGE_BUCKET'),
 );
 }
+
