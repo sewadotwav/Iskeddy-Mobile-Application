@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class AppHeader extends StatelessWidget {
   final double size;
 
-  const AppHeader({super.key, this.size = 35});
+  const AppHeader({super.key, this.size = 55});
 
   @override
   Widget build(BuildContext context) {

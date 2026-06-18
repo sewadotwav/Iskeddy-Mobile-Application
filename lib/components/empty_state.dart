@@ -26,42 +26,46 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 68,
-          height: 68,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: iconBackground),
-          child: Icon(icon, color: accentColor, size: 28),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          title,
-          style: appFont(fontSize: 15, fontWeight: FontWeight.w700),
-          textAlign: TextAlign.center,
-        ),
-        if (subtitle != null) ...[
-          const SizedBox(height: 6),
+    return Align(
+      alignment: const Alignment(0.0, -0.30), 
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 68,
+            height: 68,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: iconBackground),
+            child: Icon(icon, color: accentColor, size: 28),
+          ),
+          const SizedBox(height: 16),
           Text(
-            subtitle!,
-            style: appFont(fontSize: 13, color: const Color(0xFF8A8A8A)),
+            title,
+            style: appFont(fontSize: 15, fontWeight: FontWeight.w700),
             textAlign: TextAlign.center,
           ),
-        ],
-        if (buttonLabel != null) ...[
-          const SizedBox(height: 16),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 220),
-            child: PillButton(
-              label: buttonLabel!,
-              background: accentColor,
-              textColor: Colors.white,
-              onTap: onButtonTap ?? () {},
+          if (subtitle != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              subtitle!,
+              style: appFont(fontSize: 13, color: const Color(0xFF8A8A8A)),
+              textAlign: TextAlign.center,
             ),
-          ),
+          ],
+          if (buttonLabel != null) ...[
+            const SizedBox(height: 16),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 220),
+              child: PillButton(
+                label: buttonLabel!,
+                background: accentColor,
+                textColor: Colors.white,
+                onTap: onButtonTap ?? () {},
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

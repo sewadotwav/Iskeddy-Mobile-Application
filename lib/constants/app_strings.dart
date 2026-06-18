@@ -32,9 +32,9 @@ class AppStrings {
   static const String noCoursesTitle = 'No courses yet.';
   static const String noCoursesSubtitle = 'Tap + to add your first course.';
   static const String addCourse = '+ Add Course';
-  static String noClassesToday() => 'No classes scheduled for today.';
-  static const String breakLabel = 'Break';
+  static String noClassesToday() => 'No classes scheduled for today! Take a rest :))';
+  static const String breakLabel = 'Break/Vacant';
 
-  static const String newScheduleTitle = 'Name Your Schedule';
-  static const String newSchedulePlaceholder = 'e.g. Fall Semester 2024';
+  static const String newScheduleTitle = 'Give your schedule a name!';
+  static const String newSchedulePlaceholder = 'e.g. 3rd Year, 1st Semester';
 }
