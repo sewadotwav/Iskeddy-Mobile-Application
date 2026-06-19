@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
+import '../models/course_model.dart';
+import '../models/meeting_time_model.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_enums.dart';
 import 'app_text_styles.dart';
+import 'app_pill.dart';
+import '../utils/time_utils.dart';
 
-/// Course list item — shown on Screen 1 (today's classes) and Screen 3
-/// (grouped-by-day list). Background is filled with the course's own
-/// color; tapping the pencil icon opens the Course Editor in edit mode.
 class CourseCard extends StatelessWidget {
-  final String title;
-  final Color color;
-  final String timeRange;
-  final String? room;
-  final String? modeLabel;
+  final Course course;
+  final MeetingTime meetingTime;
+  final String scheduleId;
+  final String deviceId;
   final VoidCallback onEditTap;
 
   const CourseCard({
     super.key,
-    required this.title,
-    required this.color,
-    required this.timeRange,
-    this.room,
-    this.modeLabel,
+    required this.course,
+    required this.meetingTime,
+    required this.scheduleId,
+    required this.deviceId,
     required this.onEditTap,
   });
 
@@ -29,7 +29,7 @@ class CourseCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color,
+        color: Color(int.parse('FF${course.colorHex.replaceAll('#', '')}', radix: 16)),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -40,10 +40,13 @@ class CourseCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  title,
-                  style: appFont(fontSize: 15, fontWeight: FontWeight.w700),
+                  course.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: appFont(fontSize: 15, fontWeight: FontWeight.w700, color: accentColor),
                 ),
               ),
+              const SizedBox(width: 8),
               GestureDetector(
                 onTap: onEditTap,
                 child: const Icon(Icons.edit_outlined, size: 18, color: accentColor),
@@ -55,31 +58,31 @@ class CourseCard extends StatelessWidget {
             children: [
               const Icon(Icons.access_time, size: 14, color: accentColor),
               const SizedBox(width: 6),
-              Text(timeRange, style: appFont(fontSize: 12)),
+              Text(
+                formatTimeRange(meetingTime.startTime, meetingTime.endTime),
+                style: appFont(fontSize: 12, color: accentColor),
+              ),
             ],
           ),
-          if (room != null) ...[
+          if (course.roomNo != null && course.roomNo!.isNotEmpty) ...[
             const SizedBox(height: 4),
             Row(
               children: [
                 const Icon(Icons.location_on_outlined, size: 14, color: accentColor),
                 const SizedBox(width: 6),
-                Text(room!, style: appFont(fontSize: 12)),
+                Text(
+                  course.roomNo!,
+                  style: appFont(fontSize: 12, color: accentColor),
+                ),
               ],
             ),
           ],
-          if (modeLabel != null) ...[
+          if (course.classMode != 'onsite') ...[
             const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.6),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                modeLabel!,
-                style: appFont(fontSize: 10, fontWeight: FontWeight.w600),
-              ),
+            AppPill(
+              label: ClassModeLabel.fromValue(course.classMode).label,
+              fillColor: Colors.white.withOpacity(0.6),
+              textColor: accentColor,
             ),
           ],
         ],
