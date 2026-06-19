@@ -13,6 +13,8 @@ class GroupedCourseList extends StatelessWidget {
   final String scheduleId;
   final String deviceId;
 
+  final String? dayFilter;
+
   final ValueNotifier<bool>? isMultiSelectMode;
   final ValueNotifier<Set<String>>? selectedCourseIds;
   final Function(String)? onSelectToggle;
@@ -23,6 +25,7 @@ class GroupedCourseList extends StatelessWidget {
     required this.courses,
     required this.scheduleId,
     required this.deviceId,
+    this.dayFilter,
     this.isMultiSelectMode,
     this.selectedCourseIds,
     this.onSelectToggle,
@@ -31,7 +34,18 @@ class GroupedCourseList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final days = activeDays(courses);
+    if (dayFilter != null && coursesForDay(courses, dayFilter!).isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 40),
+        child: EmptyState(
+          icon: Icons.wb_sunny_outlined,
+          title: 'No classes scheduled',
+          subtitle: 'Enjoy your rest day! :))',
+        ),
+      );
+    }
+
+    final days = dayFilter != null ? [dayFilter!] : activeDays(courses);
 
     if (days.isEmpty) {
       return const EmptyState(

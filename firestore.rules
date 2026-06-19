@@ -1,0 +1,134 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ⚠️ DEVELOPMENT OVERRIDE: Allow read/write access to all documents
+    match /{document=**} {
+      allow read, write: if true;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SCHEDULA / ISKEDDY — Firestore Security Rules
+    //
+    // Auth model: none. Identity is a UUID generated on first app launch and
+    // stored in SharedPreferences. All data lives under devices/{deviceId}.
+    //
+    // Structure enforced:
+    //    devices/{deviceId}
+    //    devices/{deviceId}/schedules/{scheduleId}
+    //    devices/{deviceId}/schedules/{scheduleId}/courses/{courseId}
+    //
+    // All other paths are denied.
+    // ─────────────────────────────────────────────────────────────────────────
+
+
+    // ── Helper Functions ──────────────────────────────────────────────────────
+
+    function has(data, field) {
+      return field in data;
+    }
+
+    function isNonEmptyString(data, field) {
+      return has(data, field)
+          && data[field] is string
+          && data[field].size() > 0;
+    }
+
+    function isBool(data, field) {
+      return has(data, field) && data[field] is bool;
+    }
+
+    function isTimestamp(data, field) {
+      return has(data, field) && data[field] is timestamp;
+    }
+
+    function isList(data, field) {
+      return has(data, field) && data[field] is list;
+    }
+
+    function isValidClassMode(data) {
+      return isNonEmptyString(data, 'classMode')
+          && data.classMode in ['onsite', 'synchronous', 'asynchronous'];
+    }
+
+    // Updated: 4 fixed values only (Recitation removed)
+    function isValidCourseType(data) {
+      return !has(data, 'courseType')
+          || data.courseType == null
+          || data.courseType in ['Lecture', 'Lab', 'Seminar', 'Workshop'];
+    }
+
+    function isValidColorHex(data) {
+      return isNonEmptyString(data, 'colorHex')
+          && data.colorHex.size() == 7
+          && data.colorHex[0] == '#';
+    }
+
+    function isOptionalString(data, field) {
+      return !has(data, field)
+          || data[field] == null
+          || data[field] is string;
+    }
+
+    function isValidSchedule(data) {
+      return isNonEmptyString(data, 'id')
+          && isNonEmptyString(data, 'name')
+          && isBool(data, 'isPinned')
+          && isTimestamp(data, 'createdAt')
+          && isTimestamp(data, 'updatedAt');
+    }
+
+    function isValidCourse(data) {
+      return isNonEmptyString(data, 'id')
+          && isNonEmptyString(data, 'title')
+          && isValidColorHex(data)
+          && isValidClassMode(data)
+          && isValidCourseType(data)
+          && isList(data, 'meetingTimes')
+          && isOptionalString(data, 'instructor')
+          && isOptionalString(data, 'roomNo')
+          && isOptionalString(data, 'courseType')
+          && isOptionalString(data, 'notes')
+          && isTimestamp(data, 'createdAt')
+          && isTimestamp(data, 'updatedAt');
+    }
+
+
+    // ── Device Document ───────────────────────────────────────────────────────
+
+    match /devices/{deviceId} {
+      allow read:   if true;
+      allow create: if isTimestamp(request.resource.data, 'createdAt');
+      allow update: if false;
+      allow delete: if false;
+
+
+      // ── Schedules Subcollection ─────────────────────────────────────────────
+
+      match /schedules/{scheduleId} {
+        allow read:   if true;
+        allow create: if isValidSchedule(request.resource.data);
+        allow update: if isValidSchedule(request.resource.data);
+        allow delete: if true;
+
+
+        // ── Courses Subcollection ───────────────────────────────────────────────
+
+        match /courses/{courseId} {
+          allow read:   if true;
+          allow create: if isValidCourse(request.resource.data);
+          allow update: if isValidCourse(request.resource.data);
+          allow delete: if true;
+        }
+      }
+    }
+
+
+    // ── Deny All Other Paths ──────────────────────────────────────────────────
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+  }
+}

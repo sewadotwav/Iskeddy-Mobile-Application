@@ -34,6 +34,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
   Schedule? _schedule;
   List<Course> _courses = [];
   bool _initialLoading = true;
+  String? _selectedFilterDay;
 
   StreamSubscription<List<Schedule>>? _scheduleSub;
   StreamSubscription<List<Course>>? _coursesSub;
@@ -288,6 +289,52 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
     );
   }
 
+  Widget _buildDayFilter() {
+    final daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    final daysLetters = ["M", "T", "W", "T", "F", "S", "S"];
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 20, right: 20, top: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: List.generate(7, (i) {
+          final dayStr = daysOfWeek[i];
+          final letter = daysLetters[i];
+          final isSelected = _selectedFilterDay == dayStr;
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                if (isSelected) {
+                  _selectedFilterDay = null; // deselect, show all
+                } else {
+                  _selectedFilterDay = dayStr;
+                }
+              });
+            },
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? accentColor : const Color(0xFFF2F2F2),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                letter,
+                style: TextStyle(
+                  fontFamily: 'appFont',
+                  color: isSelected ? Colors.white : accentColor,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
   Widget _buildScreen(BuildContext context, Schedule schedule, List<Course> courses, bool isMultiSelect) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -304,7 +351,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                       : _buildNormalHeader(schedule, courses),
                 ),
               ),
-              if (courses.isNotEmpty)
+              if (courses.isNotEmpty) ...[
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(left: 20, right: 20, top: 20),
@@ -363,6 +410,10 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                     ),
                   ),
                 ),
+                SliverToBoxAdapter(
+                  child: _buildDayFilter(),
+                ),
+              ],
               courses.isEmpty
                   ? SliverFillRemaining(
                       hasScrollBody: false,
@@ -384,6 +435,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                           courses: courses,
                           scheduleId: widget.scheduleId,
                           deviceId: _deviceId!,
+                          dayFilter: _selectedFilterDay,
                           isMultiSelectMode: _isMultiSelectMode,
                           selectedCourseIds: _selectedCourseIds,
                           onSelectToggle: _toggleSelection,
