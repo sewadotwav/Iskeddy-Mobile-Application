@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../components/app_header.dart';
 import '../../components/app_pill.dart';
@@ -23,10 +24,17 @@ class AllSchedulesScreen extends StatefulWidget {
 }
 
 class _AllSchedulesScreenState extends State<AllSchedulesScreen> {
-  String? _deviceId;
-  bool _isMultiSelectMode = false;
-  final Set<String> _selectedScheduleIds = {};
   final FirestoreService _firestoreService = FirestoreService();
+
+  // ── Stream subscription — cached list avoids loading flash on re-emissions ──
+  String? _deviceId;
+  List<Schedule> _schedules = [];
+  bool _schedulesLoading = true;
+  StreamSubscription<List<Schedule>>? _schedulesSub;
+
+  // ── Selection state as ValueNotifiers — changes never cause Scaffold rebuild ──
+  final ValueNotifier<bool> _isMultiSelectMode = ValueNotifier(false);
+  final ValueNotifier<Set<String>> _selectedIds = ValueNotifier({});
 
   @override
   void initState() {
@@ -36,218 +44,302 @@ class _AllSchedulesScreenState extends State<AllSchedulesScreen> {
 
   Future<void> _initDevice() async {
     final id = await DeviceIdService.getDeviceId();
-    if (mounted) {
+    if (!mounted) return;
+    setState(() => _deviceId = id);
+    _subscribeSchedules(id);
+  }
+
+  void _subscribeSchedules(String deviceId) {
+    _schedulesSub?.cancel();
+    _schedulesSub = _firestoreService.getSchedulesStream(deviceId).listen((data) {
+      if (!mounted) return;
+      final sorted = List<Schedule>.from(data)
+        ..sort((a, b) {
+          if (a.isPinned == b.isPinned) return 0;
+          return a.isPinned ? -1 : 1;
+        });
       setState(() {
-        _deviceId = id;
+        _schedules = sorted;
+        _schedulesLoading = false;
       });
-    }
-  }
-
-  void _clearSelection() {
-    setState(() {
-      _isMultiSelectMode = false;
-      _selectedScheduleIds.clear();
-    });
-  }
-
-  void _toggleSelection(String scheduleId) {
-    setState(() {
-      if (_selectedScheduleIds.contains(scheduleId)) {
-        _selectedScheduleIds.remove(scheduleId);
-      } else {
-        _selectedScheduleIds.add(scheduleId);
-      }
     });
   }
 
   @override
+  void dispose() {
+    _schedulesSub?.cancel();
+    _isMultiSelectMode.dispose();
+    _selectedIds.dispose();
+    super.dispose();
+  }
+
+  void _clearSelection() {
+    _selectedIds.value = {};
+    _isMultiSelectMode.value = false;
+  }
+
+  void _toggleSelection(String scheduleId) {
+    final next = Set<String>.from(_selectedIds.value);
+    if (next.contains(scheduleId)) {
+      next.remove(scheduleId);
+    } else {
+      next.add(scheduleId);
+    }
+    _selectedIds.value = next;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (_deviceId == null) {
+    if (_deviceId == null || _schedulesLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator(color: Color(0xFF040505))),
       );
     }
 
-    return PopScope(
-      canPop: !_isMultiSelectMode,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && _isMultiSelectMode) {
-          _clearSelection();
-        }
-      },
-      child: Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(top: 16.0, bottom: 8.0),
-              child: AppHeader(),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 8.0, bottom: 12.0),
-              child: _isMultiSelectMode ? _buildMultiSelectHeader() : _buildNormalHeader(),
-            ),
-            Expanded(
-              child: StreamBuilder<List<Schedule>>(
-                stream: _firestoreService.getSchedulesStream(_deviceId!),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator(color: Color(0xFF040505)));
-                  }
-                  if (snapshot.hasError) {
-                    return const Center(child: Text('Error loading schedules.'));
-                  }
-
-                  final schedules = List<Schedule>.from(snapshot.data ?? [])
-                    ..sort((a, b) {
-                      if (a.isPinned == b.isPinned) return 0;
-                      return a.isPinned ? -1 : 1;
-                    });
-                  if (schedules.isEmpty) {
-                    return EmptyState(
-                      icon: Icons.calendar_today,
-                      title: AppStrings.noSchedules,
-                    );
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-                    itemCount: schedules.length,
-                    itemBuilder: (context, index) {
-                      final schedule = schedules[index];
-                      return StreamBuilder<List<Course>>(
-                        stream: _firestoreService.getCoursesStream(_deviceId!, schedule.id),
-                        builder: (context, courseSnapshot) {
-                          final courseCount = courseSnapshot.data?.length ?? 0;
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12.0),
-                            child: ScheduleCard(
-                              name: schedule.name,
-                              courseCount: courseCount,
-                              isPinned: schedule.isPinned,
-                              isMultiSelectMode: _isMultiSelectMode,
-                              isSelected: _selectedScheduleIds.contains(schedule.id),
-                              onTap: () {
-                                if (!_isMultiSelectMode) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => ScheduleDetailScreen(scheduleId: schedule.id),
-                                    ),
-                                  );
-                                } else {
-                                  _toggleSelection(schedule.id);
-                                }
-                              },
-                              onLongPress: () {
-                                if (!_isMultiSelectMode) {
-                                  setState(() {
-                                    _isMultiSelectMode = true;
-                                    _selectedScheduleIds.add(schedule.id);
-                                  });
-                                }
-                              },
-                              onDeleteTap: () {
-                                ConfirmDialog.show(
+    return ValueListenableBuilder<bool>(
+      valueListenable: _isMultiSelectMode,
+      builder: (context, isMultiSelect, _) {
+        return PopScope(
+          canPop: !isMultiSelect,
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop && isMultiSelect) _clearSelection();
+          },
+          child: Scaffold(
+            body: SafeArea(
+              child: Column(
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 16.0, bottom: 8.0),
+                    child: AppHeader(),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                        left: 20.0, right: 20.0, top: 8.0, bottom: 12.0),
+                    child: isMultiSelect
+                        ? _buildMultiSelectHeader()
+                        : _buildNormalHeader(),
+                  ),
+                  Expanded(
+                    child: _schedules.isEmpty
+                        ? EmptyState(
+                            icon: Icons.calendar_today,
+                            title: AppStrings.noSchedules,
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20.0, vertical: 12.0),
+                            itemCount: _schedules.length,
+                            itemBuilder: (context, index) {
+                              final schedule = _schedules[index];
+                              return _ScheduleCardItem(
+                                key: ValueKey(schedule.id),
+                                schedule: schedule,
+                                deviceId: _deviceId!,
+                                firestoreService: _firestoreService,
+                                isMultiSelectMode: _isMultiSelectMode,
+                                selectedIds: _selectedIds,
+                                onTap: () => Navigator.push(
                                   context,
-                                  title: AppStrings.deleteScheduleTitle,
-                                  message: AppStrings.deleteScheduleMessage,
-                                  onConfirm: () async {
-                                    await _firestoreService.deleteSchedule(_deviceId!, schedule.id);
-                                    if (!mounted) return;
-                                    AppToast.show(context, AppStrings.scheduleDeleted);
-                                  },
-                                );
-                              },
-                              onSelectToggle: () => _toggleSelection(schedule.id),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  );
-                },
+                                  MaterialPageRoute(
+                                    builder: (_) => ScheduleDetailScreen(
+                                      scheduleId: schedule.id,
+                                    ),
+                                  ),
+                                ),
+                                onLongPress: () {
+                                  _isMultiSelectMode.value = true;
+                                  _toggleSelection(schedule.id);
+                                },
+                                onSelectToggle: () =>
+                                    _toggleSelection(schedule.id),
+                                onDelete: () {
+                                  ConfirmDialog.show(
+                                    context,
+                                    title: AppStrings.deleteScheduleTitle,
+                                    message: AppStrings.deleteScheduleMessage,
+                                    onConfirm: () async {
+                                      await _firestoreService.deleteSchedule(
+                                          _deviceId!, schedule.id);
+                                      if (!mounted) return;
+                                      AppToast.show(
+                                          context, AppStrings.scheduleDeleted);
+                                    },
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
-      floatingActionButton: !_isMultiSelectMode
-          ? FloatingActionButton(
-              onPressed: () async {
-                final name = await NameScheduleDialog.show(context);
-                if (name == null || name.trim().isEmpty) return;
-                
-                final newId = await _firestoreService.createSchedule(_deviceId!, name.trim());
-                if (!mounted) return;
-                AppToast.show(context, AppStrings.scheduleCreated);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ScheduleDetailScreen(scheduleId: newId),
-                  ),
-                );
-              },
-              backgroundColor: const Color(0xFF040505),
-              elevation: 4,
-              shape: const CircleBorder(),
-              child: const Icon(Icons.add, color: Colors.white, size: 28),
-            )
-          : null,
-    ));
-  }
-
-  Widget _buildNormalHeader() {
-    return StreamBuilder<List<Schedule>>(
-      stream: _firestoreService.getSchedulesStream(_deviceId!),
-      builder: (context, snapshot) {
-        final count = snapshot.data?.length ?? 0;
-        return Row(
-          children: [
-            Text('Your Schedules', style: appFont(fontSize: 22, fontWeight: FontWeight.w800)),
-            const SizedBox(width: 12),
-            AppPill(label: '$count SCHEDULES'),
-          ],
+            floatingActionButton: !isMultiSelect
+                ? FloatingActionButton(
+                    onPressed: () async {
+                      final name = await NameScheduleDialog.show(context);
+                      if (name == null || name.trim().isEmpty) return;
+                      final newId = await _firestoreService.createSchedule(
+                          _deviceId!, name.trim());
+                      if (!mounted) return;
+                      AppToast.show(context, AppStrings.scheduleCreated);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              ScheduleDetailScreen(scheduleId: newId),
+                        ),
+                      );
+                    },
+                    backgroundColor: const Color(0xFF040505),
+                    elevation: 4,
+                    shape: const CircleBorder(),
+                    child: const Icon(Icons.add, color: Colors.white, size: 28),
+                  )
+                : null,
+          ),
         );
       },
     );
   }
 
-  Widget _buildMultiSelectHeader() {
+  Widget _buildNormalHeader() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        CircularIconButton(
-          icon: Icons.close,
-          primary: false,
-          onTap: _clearSelection,
-        ),
         Text(
-          '${_selectedScheduleIds.length} selected',
-          style: appFont(fontSize: 18, fontWeight: FontWeight.w600),
+          AppStrings.yourSchedules,
+          style: appFont(fontSize: 22, fontWeight: FontWeight.w800),
         ),
-        Opacity(
-          opacity: _selectedScheduleIds.isEmpty ? 0.3 : 1.0,
-          child: CircularIconButton(
-            icon: Icons.delete_outline,
-            primary: false,
-            onTap: _selectedScheduleIds.isEmpty ? () {} : () {
-              ConfirmDialog.show(
-                context,
-                title: AppStrings.bulkDeleteTitle(_selectedScheduleIds.length),
-                message: AppStrings.bulkDeleteMessage,
-                onConfirm: () async {
-                  final count = _selectedScheduleIds.length;
-                  await _firestoreService.deleteMultipleSchedules(_deviceId!, _selectedScheduleIds.toList());
-                  _clearSelection();
-                  if (!mounted) return;
-                  AppToast.show(context, AppStrings.schedulesDeleted(count));
-                },
+        const SizedBox(width: 12),
+        AppPill(label: '${_schedules.length} ${AppStrings.schedulesCount}'),
+      ],
+    );
+  }
+
+  Widget _buildMultiSelectHeader() {
+    return ValueListenableBuilder<Set<String>>(
+      valueListenable: _selectedIds,
+      builder: (context, selectedIds, _) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            CircularIconButton(
+              icon: Icons.close,
+              primary: false,
+              onTap: _clearSelection,
+            ),
+            Text(
+              AppStrings.selectedCount(selectedIds.length),
+              style: appFont(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+            Opacity(
+              opacity: selectedIds.isEmpty ? 0.3 : 1.0,
+              child: CircularIconButton(
+                icon: Icons.delete_outline,
+                primary: false,
+                onTap: selectedIds.isEmpty
+                    ? () {}
+                    : () {
+                        ConfirmDialog.show(
+                          context,
+                          title:
+                              AppStrings.bulkDeleteTitle(selectedIds.length),
+                          message: AppStrings.bulkDeleteMessage,
+                          onConfirm: () async {
+                            final count = selectedIds.length;
+                            await _firestoreService.deleteMultipleSchedules(
+                              _deviceId!, selectedIds.toList());
+                            _clearSelection();
+                            if (!mounted) return;
+                            AppToast.show(
+                                context, AppStrings.schedulesDeleted(count));
+                          },
+                        );
+                      },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ── Per-card widget that independently subscribes to course count ─────────────
+class _ScheduleCardItem extends StatefulWidget {
+  final Schedule schedule;
+  final String deviceId;
+  final FirestoreService firestoreService;
+  final ValueNotifier<bool> isMultiSelectMode;
+  final ValueNotifier<Set<String>> selectedIds;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+  final VoidCallback onSelectToggle;
+  final VoidCallback onDelete;
+
+  const _ScheduleCardItem({
+    super.key,
+    required this.schedule,
+    required this.deviceId,
+    required this.firestoreService,
+    required this.isMultiSelectMode,
+    required this.selectedIds,
+    required this.onTap,
+    required this.onLongPress,
+    required this.onSelectToggle,
+    required this.onDelete,
+  });
+
+  @override
+  State<_ScheduleCardItem> createState() => _ScheduleCardItemState();
+}
+
+class _ScheduleCardItemState extends State<_ScheduleCardItem> {
+  int _courseCount = 0;
+  StreamSubscription<List<Course>>? _sub;
+
+  @override
+  void initState() {
+    super.initState();
+    _sub = widget.firestoreService
+        .getCoursesStream(widget.deviceId, widget.schedule.id)
+        .listen((courses) {
+      if (mounted) setState(() => _courseCount = courses.length);
+    });
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: ValueListenableBuilder<bool>(
+        valueListenable: widget.isMultiSelectMode,
+        builder: (context, isMultiSelect, _) {
+          return ValueListenableBuilder<Set<String>>(
+            valueListenable: widget.selectedIds,
+            builder: (context, selectedIds, _) {
+              return RepaintBoundary(
+                child: ScheduleCard(
+                  name: widget.schedule.name,
+                  courseCount: _courseCount,
+                  isPinned: widget.schedule.isPinned,
+                  isMultiSelectMode: isMultiSelect,
+                  isSelected: selectedIds.contains(widget.schedule.id),
+                  onTap: isMultiSelect ? widget.onSelectToggle : widget.onTap,
+                  onLongPress: isMultiSelect ? () {} : widget.onLongPress,
+                  onDeleteTap: widget.onDelete,
+                  onSelectToggle: widget.onSelectToggle,
+                ),
               );
             },
-          ),
-        ),
-      ],
+          );
+        },
+      ),
     );
   }
 }

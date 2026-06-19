@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_strings.dart';
@@ -28,6 +29,14 @@ class ScheduleDetailScreen extends StatefulWidget {
 class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
   String? _deviceId;
 
+  // Cached data — updated by stream subscriptions without loading flash
+  Schedule? _schedule;
+  List<Course> _courses = [];
+  bool _initialLoading = true;
+
+  StreamSubscription<List<Schedule>>? _scheduleSub;
+  StreamSubscription<List<Course>>? _coursesSub;
+
   @override
   void initState() {
     super.initState();
@@ -36,62 +45,63 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
 
   Future<void> _initDevice() async {
     final id = await DeviceIdService.getDeviceId();
-    if (mounted) {
+    if (!mounted) return;
+    _deviceId = id;
+    _subscribeStreams(id);
+  }
+
+  void _subscribeStreams(String deviceId) {
+    final fs = FirestoreService();
+
+    _scheduleSub?.cancel();
+    _scheduleSub = fs.getSchedulesStream(deviceId).listen((schedules) {
+      if (!mounted) return;
+      final found = schedules.cast<Schedule?>().firstWhere(
+        (s) => s?.id == widget.scheduleId,
+        orElse: () => null,
+      );
+      if (found == null && _schedule != null) {
+        // Schedule was deleted — pop back
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && Navigator.canPop(context)) {
+            Navigator.of(context).pop();
+          }
+        });
+        return;
+      }
       setState(() {
-        _deviceId = id;
+        _schedule = found;
+        if (_initialLoading && found != null) _initialLoading = false;
       });
-    }
+    });
+
+    _coursesSub?.cancel();
+    _coursesSub = fs.getCoursesStream(deviceId, widget.scheduleId).listen((courses) {
+      if (!mounted) return;
+      setState(() {
+        _courses = courses;
+        _initialLoading = false;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _scheduleSub?.cancel();
+    _coursesSub?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_deviceId == null) {
+    if (_initialLoading || _deviceId == null || _schedule == null) {
       return const Scaffold(
         backgroundColor: Colors.white,
         body: Center(child: CircularProgressIndicator(color: accentColor)),
       );
     }
 
-    return StreamBuilder<List<Schedule>>(
-      stream: FirestoreService().getSchedulesStream(_deviceId!),
-      builder: (context, scheduleSnapshot) {
-        if (scheduleSnapshot.connectionState == ConnectionState.waiting) {
-           return const Scaffold(
-             backgroundColor: Colors.white,
-             body: Center(child: CircularProgressIndicator(color: accentColor)),
-           );
-        }
-
-        final schedules = scheduleSnapshot.data ?? [];
-        final schedule = schedules.cast<Schedule?>().firstWhere(
-          (s) => s?.id == widget.scheduleId,
-          orElse: () => null,
-        );
-
-        if (schedule == null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && Navigator.canPop(context)) {
-              Navigator.of(context).pop();
-            }
-          });
-          return Container(color: Colors.white);
-        }
-
-        return StreamBuilder<List<Course>>(
-          stream: FirestoreService().getCoursesStream(_deviceId!, widget.scheduleId),
-          builder: (context, courseSnapshot) {
-             if (courseSnapshot.connectionState == ConnectionState.waiting) {
-               return const Scaffold(
-                 backgroundColor: Colors.white,
-                 body: Center(child: CircularProgressIndicator(color: accentColor)),
-               );
-             }
-             final courses = courseSnapshot.data ?? [];
-             return _buildScreen(context, schedule, courses);
-          },
-        );
-      },
-    );
+    return _buildScreen(context, _schedule!, _courses);
   }
 
   Widget _buildScreen(BuildContext context, Schedule schedule, List<Course> courses) {
@@ -202,7 +212,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFFE5E5E5), width: 1),
+                              border: Border.all(color: accentColor, width: 2),
                             ),
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                             child: Column(
@@ -227,7 +237,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFFE5E5E5), width: 1),
+                              border: Border.all(color: accentColor, width: 2),
                             ),
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                             child: Column(

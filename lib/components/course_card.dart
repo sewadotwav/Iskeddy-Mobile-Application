@@ -3,8 +3,13 @@ import '../models/course_model.dart';
 import '../models/meeting_time_model.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_enums.dart';
+import '../constants/app_strings.dart';
 import 'app_text_styles.dart';
 import 'app_pill.dart';
+import 'app_toast.dart';
+import 'confirm_dialog.dart';
+import '../services/firestore_service.dart';
+import '../services/device_id_service.dart';
 import '../utils/time_utils.dart';
 
 class CourseCard extends StatelessWidget {
@@ -53,6 +58,44 @@ class CourseCard extends StatelessWidget {
                 GestureDetector(
                   onTap: onEditTap,
                   child: const Icon(Icons.edit_outlined, size: 18, color: accentColor),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () {
+                    ConfirmDialog.show(
+                      context,
+                      title: AppStrings.deleteCourseTitle(course.title),
+                      message: AppStrings.deleteCourseMessage,
+                      cancelLabel: AppStrings.cancel,
+                      confirmLabel: AppStrings.delete,
+                      onConfirm: () async {
+                        final deviceId = await DeviceIdService.getDeviceId();
+                        final fs = FirestoreService();
+                        final remainingTimes = course.meetingTimes
+                            .where((mt) =>
+                                mt.days != meetingTime.days ||
+                                mt.startTime != meetingTime.startTime ||
+                                mt.endTime != meetingTime.endTime)
+                            .toList();
+
+                        if (remainingTimes.isEmpty) {
+                          // last meeting — delete entire course
+                          await fs.deleteCourse(deviceId, scheduleId, course.id);
+                        } else {
+                          // remove only this meeting time, keep the course
+                          await fs.updateCourse(
+                            deviceId,
+                            scheduleId,
+                            course.copyWith(meetingTimes: remainingTimes),
+                          );
+                        }
+                        if (context.mounted) {
+                          AppToast.show(context, AppStrings.courseRemoved(course.title));
+                        }
+                      },
+                    );
+                  },
+                  child: const Icon(Icons.delete_outline, size: 18, color: accentColor),
                 ),
               ],
             ],

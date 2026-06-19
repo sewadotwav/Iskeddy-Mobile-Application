@@ -5,6 +5,7 @@ import '../components/course_card.dart';
 import '../components/app_pill.dart';
 import '../components/course_editor_sheet.dart';
 import '../components/app_text_styles.dart';
+import '../constants/app_strings.dart';
 import 'time_utils.dart';
 
 class GroupedCourseList extends StatelessWidget {
@@ -26,8 +27,8 @@ class GroupedCourseList extends StatelessWidget {
     if (days.isEmpty) {
       return const EmptyState(
         icon: Icons.school_outlined,
-        title: 'No courses yet.',
-        subtitle: 'Tap + to add your first course.',
+        title: AppStrings.noCoursesTitle,
+        subtitle: AppStrings.noCoursesSubtitle,
       );
     }
 
@@ -136,9 +137,9 @@ class TodayCourseList extends StatelessWidget {
     final entries = coursesForDay(courses, today);
 
     if (entries.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.wb_sunny_outlined,
-        title: 'No classes scheduled for today.',
+        title: AppStrings.noClassesToday(),
         subtitle: null,
         buttonLabel: null,
       );

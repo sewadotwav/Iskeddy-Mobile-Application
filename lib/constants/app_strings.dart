@@ -37,4 +37,8 @@ class AppStrings {
 
   static const String newScheduleTitle = 'Give your schedule a name!';
   static const String newSchedulePlaceholder = 'e.g. 3rd Year, 1st Semester';
+
+  static const String yourSchedules = 'Your Schedules';
+  static const String schedulesCount = 'SCHEDULES';
+  static String selectedCount(int count) => '$count selected';
 }

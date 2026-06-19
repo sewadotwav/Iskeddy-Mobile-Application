@@ -107,50 +107,76 @@ class _DefaultTimetableScreenState extends State<DefaultTimetableScreen> {
         return Scaffold(
           backgroundColor: Colors.white,
           body: SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(top: 16.0, bottom: 8.0),
-                      child: AppHeader(),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      schedule.name,
-                      style: appFont(fontSize: 24, fontWeight: FontWeight.w800, color: accentColor),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _todayLabel(),
-                      style: appFont(fontSize: 13, color: const Color(0xFF8A8A8A)),
-                    ),
-                    const SizedBox(height: 20),
-                    StreamBuilder<List<Course>>(
-                      stream: FirestoreService().getCoursesStream(_deviceId!, schedule.id),
-                      builder: (context, courseSnapshot) {
-                        if (courseSnapshot.connectionState == ConnectionState.waiting) {
-                          return const Padding(
-                            padding: EdgeInsets.only(top: 40),
-                            child: Center(child: CircularProgressIndicator(color: accentColor)),
-                          );
-                        }
-                        
-                        final courses = courseSnapshot.data ?? [];
-                        
-                        return TodayCourseList(
-                          courses: courses,
-                          scheduleId: schedule.id,
-                          deviceId: _deviceId!,
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 40),
-                  ],
+            child: CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      const Padding(
+                        padding: EdgeInsets.only(top: 16.0, bottom: 8.0),
+                        child: AppHeader(),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        schedule.name,
+                        style: appFont(fontSize: 24, fontWeight: FontWeight.w800, color: accentColor),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _todayLabel(),
+                        style: appFont(fontSize: 13, color: const Color(0xFF8A8A8A)),
+                      ),
+                      const SizedBox(height: 20),
+                    ]),
+                  ),
                 ),
-              ),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: StreamBuilder<List<Course>>(
+                    stream: FirestoreService().getCoursesStream(_deviceId!, schedule.id),
+                    builder: (context, courseSnapshot) {
+                      if (courseSnapshot.connectionState == ConnectionState.waiting) {
+                        return const SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Center(
+                            child: CircularProgressIndicator(color: accentColor),
+                          ),
+                        );
+                      }
+                      
+                      final courses = courseSnapshot.data ?? [];
+                      final today = weekdayString(DateTime.now().weekday);
+                      final entries = coursesForDay(courses, today);
+
+                      if (entries.isEmpty) {
+                        return SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Center(
+                            child: EmptyState(
+                              icon: Icons.wb_sunny_outlined,
+                              title: AppStrings.noClassesToday(),
+                              subtitle: null,
+                              buttonLabel: null,
+                            ),
+                          ),
+                        );
+                      }
+
+                      return SliverList(
+                        delegate: SliverChildListDelegate([
+                          TodayCourseList(
+                            courses: courses,
+                            scheduleId: schedule.id,
+                            deviceId: _deviceId!,
+                          ),
+                          const SizedBox(height: 40),
+                        ]),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         );

@@ -13,6 +13,7 @@ class EmptyState extends StatelessWidget {
   final String? subtitle;
   final String? buttonLabel;
   final VoidCallback? onButtonTap;
+  final Alignment alignment;
 
   const EmptyState({
     super.key,
@@ -22,12 +23,13 @@ class EmptyState extends StatelessWidget {
     this.subtitle,
     this.buttonLabel,
     this.onButtonTap,
+    this.alignment = const Alignment(0.0, -0.20),
   });
 
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: const Alignment(0.0, -0.30), 
+      alignment: alignment, 
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,

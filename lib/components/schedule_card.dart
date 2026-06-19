@@ -55,9 +55,9 @@ class ScheduleCard extends StatelessWidget {
             Container(
               width: 46,
               height: 46,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: courseColors[1], // mint
+                color: Color(0xFFC1EDDC),
               ),
               child: const Icon(Icons.calendar_today_outlined, color: accentColor, size: 20),
             ),

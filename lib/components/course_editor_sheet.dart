@@ -120,14 +120,65 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       context: context,
       initialTime: initialTime,
       builder: (BuildContext context, Widget? child) {
+        const mintGreen = Color(0xFF82D3B4);
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
+            colorScheme: ColorScheme.light(
+              primary: mintGreen,
+              onPrimary: Colors.white,
+              primaryContainer: mintGreen.withOpacity(0.2),
+              onPrimaryContainer: Colors.black,
+              secondaryContainer: mintGreen.withOpacity(0.2),
+              onSecondaryContainer: Colors.black,
               surface: Colors.white,
+              onSurface: Colors.black,
+              error: mintGreen,
             ),
             dialogBackgroundColor: Colors.white,
-            timePickerTheme: const TimePickerThemeData(
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: mintGreen,
+                textStyle: const TextStyle(
+                  fontFamily: 'appFont',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            timePickerTheme: TimePickerThemeData(
               backgroundColor: Colors.white,
+              hourMinuteColor: MaterialStateColor.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) {
+                  return mintGreen.withOpacity(0.3);
+                }
+                return const Color(0xFFF2F2F2);
+              }),
+              hourMinuteTextColor: MaterialStateColor.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) {
+                  return Colors.black;
+                }
+                return Colors.black87;
+              }),
+              dayPeriodColor: MaterialStateColor.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) {
+                  return mintGreen.withOpacity(0.3);
+                }
+                return const Color(0xFFF2F2F2);
+              }),
+              dayPeriodTextColor: MaterialStateColor.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) {
+                  return Colors.black;
+                }
+                return Colors.black87;
+              }),
+              dialHandColor: mintGreen,
+              dialBackgroundColor: const Color(0xFFF2F2F2),
+              dialTextColor: MaterialStateColor.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) {
+                  return Colors.white;
+                }
+                return Colors.black87;
+              }),
+              entryModeIconColor: mintGreen,
             ),
           ),
           child: child!,
@@ -470,10 +521,13 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
             const SizedBox(height: 8),
             TextField(
               controller: _titleController,
-              style: const TextStyle(fontFamily: 'appFont', fontSize: 15),
+              style: const TextStyle(fontFamily: 'ZalandoSansSemiExpanded', fontSize: 15),
               decoration: InputDecoration(
                 hintText: 'e.g. Intro to Psychology',
-                hintStyle: const TextStyle(color: Color(0xFF757575)),
+                hintStyle: const TextStyle(
+                  fontFamily: 'ZalandoSansSemiExpanded',
+                  color: Color(0xFF757575),
+                ),
                 filled: true,
                 fillColor: const Color(0xFFF2F2F2),
                 border: OutlineInputBorder(
@@ -612,6 +666,11 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
               const SizedBox(height: 8),
               TextButton(
                 onPressed: _onDelete,
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(50, 30),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 child: const Text(
                   'Delete',
                   style: TextStyle(
@@ -622,9 +681,10 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                   ),
                 ),
               ),
+              const SizedBox(height: 16),
+            ] else ...[
+              const SizedBox(height: 24),
             ],
-            
-            const SizedBox(height: 32),
           ],
         ),
       ),

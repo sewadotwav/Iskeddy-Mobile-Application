@@ -41,6 +41,7 @@ class NameScheduleDialog extends StatefulWidget {
 
 class _NameScheduleDialogState extends State<NameScheduleDialog> {
   late final TextEditingController _controller;
+  bool _showError = false;
 
   @override
   void initState() {
@@ -72,18 +73,42 @@ class _NameScheduleDialogState extends State<NameScheduleDialog> {
             const SizedBox(height: 16),
             TextField(
               controller: _controller,
+              onChanged: (_) {
+                if (_showError) setState(() => _showError = false);
+              },
               decoration: InputDecoration(
                 hintText: widget.placeholder,
                 filled: true,
                 fillColor: const Color(0xFFF2F2F2),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                  borderSide: _showError
+                      ? const BorderSide(color: Colors.black, width: 1.5)
+                      : BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: _showError
+                      ? const BorderSide(color: Colors.black, width: 1.5)
+                      : BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: _showError
+                      ? const BorderSide(color: Colors.black, width: 1.5)
+                      : const BorderSide(color: Colors.black, width: 1),
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
               style: appFont(fontSize: 16),
             ),
+            if (_showError) ...[ 
+              const SizedBox(height: 6),
+              Text(
+                'Please enter a schedule name.',
+                style: appFont(fontSize: 12, color: const Color(0xFFFF5252)),
+              ),
+            ],
             const SizedBox(height: 24),
             Row(
               children: [
@@ -106,7 +131,11 @@ class _NameScheduleDialogState extends State<NameScheduleDialog> {
                       if (text.isNotEmpty) {
                         Navigator.pop(context, text);
                       } else if (widget.initialValue != null) {
+                        // rename mode — empty = cancel
                         Navigator.pop(context, null);
+                      } else {
+                        // create mode — show inline error
+                        setState(() => _showError = true);
                       }
                     },
                   ),

@@ -15,27 +15,39 @@ class ColorPickerGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 5,
-      crossAxisSpacing: 14,
-      mainAxisSpacing: 14,
-      childAspectRatio: 1,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      children: List.generate(colors.length, (i) {
-        final isSelected = i == selectedIndex;
-        return GestureDetector(
-          onTap: () => onSelected(i),
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: colors[i],
-              border: isSelected ? Border.all(color: accentColor, width: 1.6) : null,
+    final row1 = colors.sublist(0, 5);
+    final row2 = colors.sublist(5, 10);
+    
+    Widget buildRow(List<Color> rowColors, int offset) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: List.generate(rowColors.length, (index) {
+          final i = offset + index;
+          final isSelected = i == selectedIndex;
+          return GestureDetector(
+            onTap: () => onSelected(i),
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: colors[i],
+                border: isSelected ? Border.all(color: accentColor, width: 1.6) : null,
+              ),
+              child: isSelected ? const Icon(Icons.check, size: 15, color: accentColor) : null,
             ),
-            child: isSelected ? const Icon(Icons.check, size: 15, color: accentColor) : null,
-          ),
-        );
-      }),
+          );
+        }),
+      );
+    }
+
+    return Column(
+      children: [
+        buildRow(row1, 0),
+        const SizedBox(height: 12),
+        buildRow(row2, 5),
+      ],
     );
   }
 }
