@@ -72,6 +72,8 @@ class ScheduleCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: appFont(fontSize: 17, fontWeight: FontWeight.w800),
                         ),
                       ),

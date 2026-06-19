@@ -105,6 +105,8 @@ class _NameScheduleDialogState extends State<NameScheduleDialog> {
                       final text = _controller.text.trim();
                       if (text.isNotEmpty) {
                         Navigator.pop(context, text);
+                      } else if (widget.initialValue != null) {
+                        Navigator.pop(context, null);
                       }
                     },
                   ),

@@ -12,9 +12,11 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    DefaultTimetableScreen(),
-    AllSchedulesScreen(),
+  late final List<Widget> _pages = [
+    DefaultTimetableScreen(
+      onGoToSchedules: () => setState(() => _currentIndex = 1),
+    ),
+    const AllSchedulesScreen(),
   ];
 
   void _onTabTapped(int index) {

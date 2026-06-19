@@ -77,10 +77,10 @@ class CourseCard extends StatelessWidget {
               ],
             ),
           ],
-          if (course.classMode != 'onsite') ...[
+          if (course.classMode != ClassMode.onsite) ...[
             const SizedBox(height: 8),
             AppPill(
-              label: ClassModeLabel.fromValue(course.classMode).label,
+              label: course.classMode.label,
               fillColor: Colors.white.withOpacity(0.6),
               textColor: accentColor,
             ),

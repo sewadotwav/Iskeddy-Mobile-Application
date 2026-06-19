@@ -10,6 +10,7 @@ import '../models/course_model.dart';
 import '../models/meeting_time_model.dart';
 import '../services/firestore_service.dart';
 import '../services/device_id_service.dart';
+import '../utils/time_utils.dart';
 
 import 'color_picker_grid.dart';
 import 'pill_button.dart';
@@ -85,8 +86,8 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       _titleController.text = c.title;
       _selectedColorIndex = courseColorHexValues.indexOf(c.colorHex);
       if (_selectedColorIndex == -1) _selectedColorIndex = 0;
-      _classMode = ClassModeLabel.fromValue(c.classMode);
-      _courseType = CourseTypeLabel.fromValue(c.courseType);
+      _classMode = c.classMode;
+      _courseType = c.courseType;
       _instructorController.text = c.instructor ?? '';
       _roomController.text = c.roomNo ?? '';
       
@@ -147,11 +148,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
     }
 
     for (var m in _meetingTimes) {
-      final startParts = m.startTime.split(':');
-      final endParts = m.endTime.split(':');
-      final startMins = int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
-      final endMins = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
-      if (endMins <= startMins) {
+      if (timeToMinutes(m.endTime) <= timeToMinutes(m.startTime)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('End time must be after start time')),
         );
@@ -166,8 +163,8 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       id: isAdd ? const Uuid().v4() : widget.course!.id,
       title: _titleController.text.trim(),
       colorHex: courseColorHexValues[_selectedColorIndex],
-      classMode: _classMode.value,
-      courseType: _courseType?.label,
+      classMode: _classMode,
+      courseType: _courseType,
       instructor: _instructorController.text.trim().isEmpty ? null : _instructorController.text.trim(),
       roomNo: _roomController.text.trim().isEmpty ? null : _roomController.text.trim(),
       meetingTimes: _meetingTimes.map((m) => MeetingTime(
@@ -182,19 +179,15 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
     final deviceId = await DeviceIdService.getDeviceId();
     if (isAdd) {
       await FirestoreService().addCourse(deviceId, widget.scheduleId, saved);
-      if (mounted) {
-        AppToast.show(context, AppStrings.courseAdded(saved.title));
-      }
+      if (!mounted) return;
+      AppToast.show(context, AppStrings.courseAdded(saved.title));
     } else {
       await FirestoreService().updateCourse(deviceId, widget.scheduleId, saved);
-      if (mounted) {
-        AppToast.show(context, AppStrings.changesSaved);
-      }
+      if (!mounted) return;
+      AppToast.show(context, AppStrings.changesSaved);
     }
-
-    if (mounted) {
-      Navigator.of(context).pop();
-    }
+    
+    Navigator.of(context).pop();
   }
 
   void _onDelete() {
@@ -207,10 +200,9 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       onConfirm: () async {
         final deviceId = await DeviceIdService.getDeviceId();
         await FirestoreService().deleteCourse(deviceId, widget.scheduleId, widget.course!.id);
-        if (mounted) {
-          AppToast.show(context, AppStrings.courseRemoved(widget.course!.title));
-          Navigator.of(context).pop();
-        }
+        if (!mounted) return;
+        AppToast.show(context, AppStrings.courseRemoved(widget.course!.title));
+        Navigator.of(context).pop();
       },
     );
   }
@@ -233,29 +225,20 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
         color: const Color(0xFFF2F2F2),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: DropdownButton2<ClassMode>(
-        value: _classMode,
-        isExpanded: true,
-        underline: const SizedBox(),
-        iconStyleData: const IconStyleData(
-          icon: Icon(Icons.keyboard_arrow_down, color: accentColor),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<ClassMode>(
+          value: _classMode,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down, color: accentColor),
+          items: ClassMode.values.map((e) => DropdownMenuItem(
+            value: e,
+            child: Text(e.label, style: const TextStyle(fontSize: 14)),
+          )).toList(),
+          onChanged: (val) {
+            if (val != null) setState(() => _classMode = val);
+          },
         ),
-        buttonStyleData: const ButtonStyleData(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        ),
-        dropdownStyleData: DropdownStyleData(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        items: ClassMode.values.map((e) => DropdownMenuItem(
-          value: e,
-          child: Text(e.label, style: const TextStyle(fontSize: 14)),
-        )).toList(),
-        onChanged: (val) {
-          if (val != null) setState(() => _classMode = val);
-        },
       ),
     );
   }
@@ -277,26 +260,17 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
         color: const Color(0xFFF2F2F2),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: DropdownButton2<CourseType?>(
-        value: _courseType,
-        isExpanded: true,
-        underline: const SizedBox(),
-        iconStyleData: const IconStyleData(
-          icon: Icon(Icons.keyboard_arrow_down, color: accentColor),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<CourseType?>(
+          value: _courseType,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down, color: accentColor),
+          items: items,
+          onChanged: (val) {
+            setState(() => _courseType = val);
+          },
         ),
-        buttonStyleData: const ButtonStyleData(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        ),
-        dropdownStyleData: DropdownStyleData(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        items: items,
-        onChanged: (val) {
-          setState(() => _courseType = val);
-        },
       ),
     );
   }
