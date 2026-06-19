@@ -22,11 +22,15 @@ class _MeetingTimeInput {
   List<String> days;
   String startTime;
   String endTime;
+  ClassMode classMode;
+  CourseType? courseType;
 
   _MeetingTimeInput({
     required this.days,
     required this.startTime,
     required this.endTime,
+    required this.classMode,
+    this.courseType,
   });
 }
 
@@ -74,8 +78,6 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
   final TextEditingController _roomController = TextEditingController();
 
   int _selectedColorIndex = 0;
-  ClassMode _classMode = ClassMode.onsite;
-  CourseType? _courseType;
   List<_MeetingTimeInput> _meetingTimes = [];
 
   @override
@@ -86,8 +88,6 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       _titleController.text = c.title;
       _selectedColorIndex = courseColorHexValues.indexOf(c.colorHex);
       if (_selectedColorIndex == -1) _selectedColorIndex = 0;
-      _classMode = c.classMode;
-      _courseType = c.courseType;
       _instructorController.text = c.instructor ?? '';
       _roomController.text = c.roomNo ?? '';
       
@@ -95,10 +95,12 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
         days: List.from(m.days),
         startTime: m.startTime,
         endTime: m.endTime,
+        classMode: m.classMode,
+        courseType: m.courseType,
       )).toList();
     } else {
       _meetingTimes = [
-        _MeetingTimeInput(days: [], startTime: '08:00', endTime: '09:30')
+        _MeetingTimeInput(days: [], startTime: '08:00', endTime: '09:30', classMode: ClassMode.onsite)
       ];
     }
   }
@@ -206,17 +208,13 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
 
   void _onSave() async {
     if (_titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Course title is required')),
-      );
+      AppToast.show(context, 'Course title is required', isError: true);
       return;
     }
 
     for (var m in _meetingTimes) {
       if (timeToMinutes(m.endTime) <= timeToMinutes(m.startTime)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('End time must be after start time')),
-        );
+        AppToast.show(context, AppStrings.invalidTimeMessage, isError: true);
         return;
       }
     }
@@ -228,14 +226,14 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       id: isAdd ? const Uuid().v4() : widget.course!.id,
       title: _titleController.text.trim(),
       colorHex: courseColorHexValues[_selectedColorIndex],
-      classMode: _classMode,
-      courseType: _courseType,
       instructor: _instructorController.text.trim().isEmpty ? null : _instructorController.text.trim(),
       roomNo: _roomController.text.trim().isEmpty ? null : _roomController.text.trim(),
       meetingTimes: _meetingTimes.map((m) => MeetingTime(
         days: m.days,
         startTime: m.startTime,
         endTime: m.endTime,
+        classMode: m.classMode,
+        courseType: m.courseType,
       )).toList(),
       createdAt: isAdd ? now : widget.course!.createdAt,
       updatedAt: now,
@@ -284,7 +282,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
     );
   }
 
-  Widget _buildClassModeDropdown() {
+  Widget _buildClassModeDropdown(int index) {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF2F2F2),
@@ -293,22 +291,23 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<ClassMode>(
-          value: _classMode,
+          value: _meetingTimes[index].classMode,
           isExpanded: true,
+          dropdownColor: Colors.white,
           icon: const Icon(Icons.keyboard_arrow_down, color: accentColor),
           items: ClassMode.values.map((e) => DropdownMenuItem(
             value: e,
             child: Text(e.label, style: const TextStyle(fontSize: 14)),
           )).toList(),
           onChanged: (val) {
-            if (val != null) setState(() => _classMode = val);
+            if (val != null) setState(() => _meetingTimes[index].classMode = val);
           },
         ),
       ),
     );
   }
 
-  Widget _buildCourseTypeDropdown() {
+  Widget _buildCourseTypeDropdown(int index) {
     final List<DropdownMenuItem<CourseType?>> items = [
       const DropdownMenuItem<CourseType?>(
         value: null,
@@ -328,12 +327,13 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<CourseType?>(
-          value: _courseType,
+          value: _meetingTimes[index].courseType,
           isExpanded: true,
+          dropdownColor: Colors.white,
           icon: const Icon(Icons.keyboard_arrow_down, color: accentColor),
           items: items,
           onChanged: (val) {
-            setState(() => _courseType = val);
+            setState(() => _meetingTimes[index].courseType = val);
           },
         ),
       ),
@@ -452,6 +452,37 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
         items.add(const SizedBox(height: 8));
       }
 
+      items.add(
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionLabel('CLASS MODE'),
+                  const SizedBox(height: 8),
+                  _buildClassModeDropdown(i),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionLabel('COURSE TYPE'),
+                  const SizedBox(height: 8),
+                  _buildCourseTypeDropdown(i),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+      items.add(const SizedBox(height: 16));
+
+      items.add(_buildSectionLabel('MEETING DAYS'));
+      items.add(const SizedBox(height: 8));
       items.add(_buildDaysRow(i));
       items.add(const SizedBox(height: 16));
 
@@ -548,34 +579,6 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
             ),
             const SizedBox(height: 24),
 
-            // Mode and Type
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionLabel('CLASS MODE'),
-                      const SizedBox(height: 8),
-                      _buildClassModeDropdown(),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionLabel('COURSE TYPE'),
-                      const SizedBox(height: 8),
-                      _buildCourseTypeDropdown(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
             // Meeting Times
             ..._buildMeetingTimesList(),
 
@@ -584,7 +587,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
               child: TextButton.icon(
                 onPressed: () {
                   setState(() {
-                    _meetingTimes.add(_MeetingTimeInput(days: [], startTime: '08:00', endTime: '09:30'));
+                    _meetingTimes.add(_MeetingTimeInput(days: [], startTime: '08:00', endTime: '09:30', classMode: ClassMode.onsite));
                   });
                 },
                 icon: const Icon(Icons.add_circle_outline, color: accentColor),

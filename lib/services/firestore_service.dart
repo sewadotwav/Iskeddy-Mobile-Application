@@ -10,7 +10,7 @@ class FirestoreService {
       _db.collection('devices').doc(deviceId).collection('schedules');
 
   CollectionReference<Map<String, dynamic>> _coursesRef(
-      String deviceId, String scheduleId) =>
+          String deviceId, String scheduleId) =>
       _schedulesRef(deviceId).doc(scheduleId).collection('courses');
 
   // ── Schedules ──────────────────────────────────────────────
@@ -123,5 +123,19 @@ class FirestoreService {
   Future<void> deleteCourse(
       String deviceId, String scheduleId, String courseId) async {
     await _coursesRef(deviceId, scheduleId).doc(courseId).delete();
+  }
+
+  Future<void> deleteMultipleCourses(
+      String deviceId, String scheduleId, List<String> courseIds) async {
+    if (courseIds.isEmpty) return;
+
+    final batch = _db.batch();
+    final collectionRef = _coursesRef(deviceId, scheduleId);
+
+    for (final id in courseIds) {
+      batch.delete(collectionRef.doc(id));
+    }
+
+    await batch.commit();
   }
 }

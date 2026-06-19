@@ -3,7 +3,7 @@ import '../constants/app_colors.dart';
 import 'app_text_styles.dart';
 
 class AppToast {
-  static void show(BuildContext context, String message) {
+  static void show(BuildContext context, String message, {bool isError = false}) {
     final overlay = Overlay.of(context);
     late OverlayEntry entry;
 
@@ -14,13 +14,14 @@ class AppToast {
         right: 24,
         child: _AnimatedToastBubble(
           message: message,
+          isError: isError,
           onDismiss: () => entry.remove(),
         ),
       ),
     );
 
     overlay.insert(entry);
-    Future.delayed(const Duration(milliseconds: 2400), () {
+    Future.delayed(const Duration(milliseconds: 3000), () {
       try { entry.remove(); } catch (_) {}
     });
   }
@@ -28,9 +29,14 @@ class AppToast {
 
 class _AnimatedToastBubble extends StatefulWidget {
   final String message;
+  final bool isError;
   final VoidCallback onDismiss;
 
-  const _AnimatedToastBubble({required this.message, required this.onDismiss});
+  const _AnimatedToastBubble({
+    required this.message, 
+    required this.isError,
+    required this.onDismiss
+  });
 
   @override
   State<_AnimatedToastBubble> createState() => _AnimatedToastBubbleState();
@@ -66,6 +72,8 @@ class _AnimatedToastBubbleState extends State<_AnimatedToastBubble>
 
   @override
   Widget build(BuildContext context) {
+    final color = widget.isError ? const Color(0xFFFF5252) : accentColor;
+    
     return FadeTransition(
       opacity: _opacity,
       child: SlideTransition(
@@ -76,9 +84,10 @@ class _AnimatedToastBubbleState extends State<_AnimatedToastBubble>
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: color.withOpacity(0.5), width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: accentColor.withOpacity(0.12),
+                  color: color.withOpacity(0.12),
                   blurRadius: 14,
                   offset: const Offset(0, 4),
                 ),
@@ -87,13 +96,17 @@ class _AnimatedToastBubbleState extends State<_AnimatedToastBubble>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.check_circle, size: 16, color: accentColor),
+                Icon(
+                  widget.isError ? Icons.error_outline : Icons.check_circle, 
+                  size: 16, 
+                  color: color
+                ),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
                     widget.message,
-                    overflow: TextOverflow.ellipsis,
-                    style: appFont(fontSize: 13, fontWeight: FontWeight.w600).copyWith(
+                    overflow: TextOverflow.visible,
+                    style: appFont(fontSize: 13, fontWeight: FontWeight.w600, color: widget.isError ? color : Colors.black).copyWith(
                       decoration: TextDecoration.none,
                       decorationColor: Colors.transparent,
                     ),

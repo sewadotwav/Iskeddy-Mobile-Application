@@ -21,6 +21,16 @@ class AppStrings {
   static String deleteCourseTitle(String title) => 'Remove $title?';
   static const String deleteCourseMessage = 'This cannot be undone.';
 
+  static String deleteCoursesTitle(int count) => 'Delete $count courses?';
+  static const String deleteCoursesMessage =
+      'This cannot be undone. These courses will be permanently removed.';
+  static String coursesDeleted(int count) => '$count courses deleted';
+
+  static const String selectAll = 'Select All';
+
+  static const String invalidTimeMessage =
+      'Please enter valid meeting times (e.g. end time must be after start time).';
+
   static const String cancel = 'Cancel';
   static const String delete = 'Delete';
   static const String create = 'Create';

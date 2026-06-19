@@ -13,11 +13,20 @@ class GroupedCourseList extends StatelessWidget {
   final String scheduleId;
   final String deviceId;
 
+  final ValueNotifier<bool>? isMultiSelectMode;
+  final ValueNotifier<Set<String>>? selectedCourseIds;
+  final Function(String)? onSelectToggle;
+  final Function(String)? onLongPress;
+
   const GroupedCourseList({
     super.key,
     required this.courses,
     required this.scheduleId,
     required this.deviceId,
+    this.isMultiSelectMode,
+    this.selectedCourseIds,
+    this.onSelectToggle,
+    this.onLongPress,
   });
 
   @override
@@ -52,20 +61,56 @@ class GroupedCourseList extends StatelessWidget {
             ),
             ...List.generate(entries.length, (i) {
               final entry = entries[i];
+              
+              Widget cardContent = CourseCard(
+                course: entry.course,
+                meetingTime: entry.meetingTime,
+                scheduleId: scheduleId,
+                deviceId: deviceId,
+                onEditTap: () => CourseEditorSheet.show(
+                  context,
+                  deviceId: deviceId,
+                  scheduleId: scheduleId,
+                  course: entry.course,
+                ),
+              );
+
+              if (isMultiSelectMode != null && selectedCourseIds != null) {
+                cardContent = ValueListenableBuilder<bool>(
+                  valueListenable: isMultiSelectMode!,
+                  builder: (context, isMultiSelect, _) {
+                    return ValueListenableBuilder<Set<String>>(
+                      valueListenable: selectedCourseIds!,
+                      builder: (context, selectedIds, _) {
+                        return CourseCard(
+                          course: entry.course,
+                          meetingTime: entry.meetingTime,
+                          scheduleId: scheduleId,
+                          deviceId: deviceId,
+                          isMultiSelectMode: isMultiSelect,
+                          isSelected: selectedIds.contains(entry.course.id),
+                          onSelectToggle: onSelectToggle != null 
+                              ? () => onSelectToggle!(entry.course.id) 
+                              : null,
+                          onLongPress: onLongPress != null 
+                              ? () => onLongPress!(entry.course.id) 
+                              : null,
+                          onEditTap: () => CourseEditorSheet.show(
+                            context,
+                            deviceId: deviceId,
+                            scheduleId: scheduleId,
+                            course: entry.course,
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              }
+
               return Column(
                 children: [
-                  CourseCard(
-                    course: entry.course,
-                    meetingTime: entry.meetingTime,
-                    scheduleId: scheduleId,
-                    deviceId: deviceId,
-                    onEditTap: () => CourseEditorSheet.show(
-                      context,
-                      deviceId: deviceId,
-                      scheduleId: scheduleId,
-                      course: entry.course,
-                    ),
-                  ),
+                  cardContent,
                   if (i < entries.length - 1) ...[
                     if (hasBreakBefore(entries[i].meetingTime, entries[i + 1].meetingTime))
                       const _BreakDivider()

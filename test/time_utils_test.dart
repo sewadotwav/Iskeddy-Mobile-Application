@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import '../lib/utils/time_utils.dart';
 import '../lib/models/meeting_time_model.dart';
+import '../lib/constants/app_enums.dart';
 
 void main() {
   test('timeToMinutes', () {
@@ -14,16 +15,16 @@ void main() {
   test('hasBreakBefore', () {
     expect(
       hasBreakBefore(
-        MeetingTime(days: [], startTime: "08:00", endTime: "09:30"),
-        MeetingTime(days: [], startTime: "10:00", endTime: "11:30")
+        MeetingTime(days: [], startTime: "08:00", endTime: "09:30", classMode: ClassMode.onsite),
+        MeetingTime(days: [], startTime: "10:00", endTime: "11:30", classMode: ClassMode.onsite)
       ),
       true
     );
 
     expect(
       hasBreakBefore(
-        MeetingTime(days: [], startTime: "08:00", endTime: "09:30"),
-        MeetingTime(days: [], startTime: "09:45", endTime: "11:00")
+        MeetingTime(days: [], startTime: "08:00", endTime: "09:30", classMode: ClassMode.onsite),
+        MeetingTime(days: [], startTime: "09:45", endTime: "11:00", classMode: ClassMode.onsite)
       ),
       false
     );
