@@ -13,6 +13,7 @@ class CourseCard extends StatelessWidget {
   final String scheduleId;
   final String deviceId;
   final VoidCallback onEditTap;
+  final bool readOnly;
 
   const CourseCard({
     super.key,
@@ -21,6 +22,7 @@ class CourseCard extends StatelessWidget {
     required this.scheduleId,
     required this.deviceId,
     required this.onEditTap,
+    this.readOnly = false,
   });
 
   @override
@@ -46,11 +48,13 @@ class CourseCard extends StatelessWidget {
                   style: appFont(fontSize: 15, fontWeight: FontWeight.w700, color: accentColor),
                 ),
               ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: onEditTap,
-                child: const Icon(Icons.edit_outlined, size: 18, color: accentColor),
-              ),
+              if (!readOnly) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: onEditTap,
+                  child: const Icon(Icons.edit_outlined, size: 18, color: accentColor),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 10),
@@ -77,14 +81,24 @@ class CourseCard extends StatelessWidget {
               ],
             ),
           ],
-          if (course.classMode != ClassMode.onsite) ...[
-            const SizedBox(height: 8),
-            AppPill(
-              label: course.classMode.label,
-              fillColor: Colors.white.withOpacity(0.6),
-              textColor: accentColor,
-            ),
-          ],
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              AppPill(
+                label: course.classMode.label,
+                fillColor: Colors.white.withOpacity(0.6),
+                textColor: accentColor,
+              ),
+              if (course.courseType != null)
+                AppPill(
+                  label: course.courseType!.label,
+                  fillColor: Colors.white.withOpacity(0.6),
+                  textColor: accentColor,
+                ),
+            ],
+          ),
         ],
       ),
     );

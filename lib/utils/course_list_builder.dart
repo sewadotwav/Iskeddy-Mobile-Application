@@ -156,6 +156,7 @@ class TodayCourseList extends StatelessWidget {
               scheduleId: scheduleId,
               deviceId: deviceId,
               onEditTap: () {},
+              readOnly: true,
             ),
             if (i < entries.length - 1) ...[
               if (hasBreakBefore(entries[i].meetingTime, entries[i + 1].meetingTime))

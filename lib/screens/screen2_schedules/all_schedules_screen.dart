@@ -98,7 +98,11 @@ class _AllSchedulesScreenState extends State<AllSchedulesScreen> {
                     return const Center(child: Text('Error loading schedules.'));
                   }
 
-                  final schedules = snapshot.data ?? [];
+                  final schedules = List<Schedule>.from(snapshot.data ?? [])
+                    ..sort((a, b) {
+                      if (a.isPinned == b.isPinned) return 0;
+                      return a.isPinned ? -1 : 1;
+                    });
                   if (schedules.isEmpty) {
                     return EmptyState(
                       icon: Icons.calendar_today,

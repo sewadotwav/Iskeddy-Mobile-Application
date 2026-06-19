@@ -19,6 +19,7 @@ class ColorPickerGrid extends StatelessWidget {
       crossAxisCount: 5,
       crossAxisSpacing: 14,
       mainAxisSpacing: 14,
+      childAspectRatio: 1,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       children: List.generate(colors.length, (i) {
