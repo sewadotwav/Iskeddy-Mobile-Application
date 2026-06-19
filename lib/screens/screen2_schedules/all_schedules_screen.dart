@@ -80,11 +80,11 @@ class _AllSchedulesScreenState extends State<AllSchedulesScreen> {
         child: Column(
           children: [
             const Padding(
-              padding: EdgeInsets.only(top: 16.0, bottom: 24.0),
+              padding: EdgeInsets.only(top: 16.0, bottom: 8.0),
               child: AppHeader(),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+              padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 8.0, bottom: 12.0),
               child: _isMultiSelectMode ? _buildMultiSelectHeader() : _buildNormalHeader(),
             ),
             Expanded(

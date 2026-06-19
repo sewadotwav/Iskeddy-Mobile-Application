@@ -250,24 +250,30 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                     ),
                   ),
                 ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 20, right: 20, top: 16, bottom: 100),
-                  child: courses.isEmpty
-                      ? const Center(
+              courses.isEmpty
+                  ? SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Center(
                           child: EmptyState(
                             icon: Icons.school_outlined,
                             title: AppStrings.noCoursesTitle,
                             subtitle: AppStrings.noCoursesSubtitle,
                           ),
-                        )
-                      : GroupedCourseList(
+                        ),
+                      ),
+                    )
+                  : SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 20, right: 20, top: 16, bottom: 100),
+                        child: GroupedCourseList(
                           courses: courses,
                           scheduleId: widget.scheduleId,
                           deviceId: _deviceId!,
                         ),
-                ),
-              ),
+                      ),
+                    ),
             ],
           ),
           Positioned(

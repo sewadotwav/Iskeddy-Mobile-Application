@@ -15,16 +15,17 @@ class ColorPickerGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 14,
-      runSpacing: 14,
+    return GridView.count(
+      crossAxisCount: 5,
+      crossAxisSpacing: 14,
+      mainAxisSpacing: 14,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       children: List.generate(colors.length, (i) {
         final isSelected = i == selectedIndex;
         return GestureDetector(
           onTap: () => onSelected(i),
           child: Container(
-            width: 34,
-            height: 34,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: colors[i],

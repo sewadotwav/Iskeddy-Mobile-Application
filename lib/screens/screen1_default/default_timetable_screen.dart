@@ -84,8 +84,10 @@ class _DefaultTimetableScreenState extends State<DefaultTimetableScreen> {
             body: SafeArea(
               child: Column(
                 children: [
-                  const AppHeader(),
-                  const SizedBox(height: 24),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 16.0, bottom: 8.0),
+                    child: AppHeader(),
+                  ),
                   Expanded(
                     child: EmptyState(
                       icon: Icons.push_pin_outlined,
@@ -106,43 +108,48 @@ class _DefaultTimetableScreenState extends State<DefaultTimetableScreen> {
           backgroundColor: Colors.white,
           body: SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const AppHeader(),
-                  const SizedBox(height: 20),
-                  Text(
-                    schedule.name,
-                    style: appFont(fontSize: 24, fontWeight: FontWeight.w800, color: accentColor),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _todayLabel(),
-                    style: appFont(fontSize: 13, color: const Color(0xFF8A8A8A)),
-                  ),
-                  const SizedBox(height: 20),
-                  StreamBuilder<List<Course>>(
-                    stream: FirestoreService().getCoursesStream(_deviceId!, schedule.id),
-                    builder: (context, courseSnapshot) {
-                      if (courseSnapshot.connectionState == ConnectionState.waiting) {
-                        return const Padding(
-                          padding: EdgeInsets.only(top: 40),
-                          child: Center(child: CircularProgressIndicator(color: accentColor)),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 16.0, bottom: 8.0),
+                      child: AppHeader(),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      schedule.name,
+                      style: appFont(fontSize: 24, fontWeight: FontWeight.w800, color: accentColor),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _todayLabel(),
+                      style: appFont(fontSize: 13, color: const Color(0xFF8A8A8A)),
+                    ),
+                    const SizedBox(height: 20),
+                    StreamBuilder<List<Course>>(
+                      stream: FirestoreService().getCoursesStream(_deviceId!, schedule.id),
+                      builder: (context, courseSnapshot) {
+                        if (courseSnapshot.connectionState == ConnectionState.waiting) {
+                          return const Padding(
+                            padding: EdgeInsets.only(top: 40),
+                            child: Center(child: CircularProgressIndicator(color: accentColor)),
+                          );
+                        }
+                        
+                        final courses = courseSnapshot.data ?? [];
+                        
+                        return TodayCourseList(
+                          courses: courses,
+                          scheduleId: schedule.id,
+                          deviceId: _deviceId!,
                         );
-                      }
-                      
-                      final courses = courseSnapshot.data ?? [];
-                      
-                      return TodayCourseList(
-                        courses: courses,
-                        scheduleId: schedule.id,
-                        deviceId: _deviceId!,
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 40),
-                ],
+                      },
+                    ),
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
           ),

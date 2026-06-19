@@ -77,10 +77,6 @@ class ScheduleCard extends StatelessWidget {
                           style: appFont(fontSize: 17, fontWeight: FontWeight.w800),
                         ),
                       ),
-                      if (isPinned) ...[
-                        const SizedBox(width: 6),
-                        const Icon(Icons.push_pin, size: 14, color: accentColor),
-                      ],
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -106,12 +102,22 @@ class ScheduleCard extends StatelessWidget {
             if (isMultiSelectMode)
               _SelectionCircle(selected: isSelected)
             else
-              GestureDetector(
-                onTap: onDeleteTap,
-                child: const Padding(
-                  padding: EdgeInsets.only(top: 4),
-                  child: Icon(Icons.delete_outline, size: 22, color: accentColor),
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isPinned)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 4, right: 6),
+                      child: Icon(Icons.push_pin, size: 20, color: accentColor),
+                    ),
+                  GestureDetector(
+                    onTap: onDeleteTap,
+                    child: const Padding(
+                      padding: EdgeInsets.only(top: 4),
+                      child: Icon(Icons.delete_outline, size: 22, color: accentColor),
+                    ),
+                  ),
+                ],
               ),
           ],
         ),

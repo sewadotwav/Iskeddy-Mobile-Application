@@ -119,6 +119,20 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
     final picked = await showTimePicker(
       context: context,
       initialTime: initialTime,
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              surface: Colors.white,
+            ),
+            dialogBackgroundColor: Colors.white,
+            timePickerTheme: const TimePickerThemeData(
+              backgroundColor: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (picked != null) {
