@@ -115,9 +115,27 @@ class FirestoreService {
 
   Future<void> updateCourse(
       String deviceId, String scheduleId, Course course) async {
-    final data = course.toMap();
-    data['updatedAt'] = FieldValue.serverTimestamp();
-    await _coursesRef(deviceId, scheduleId).doc(course.id).set(data);
+    await _coursesRef(deviceId, scheduleId).doc(course.id).update({
+      ...course.toMap(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> updateCourseTracker(
+    String deviceId,
+    String scheduleId,
+    String courseId, {
+    int? maxAbsences,
+    int? absenceCount,
+    int? lateCount,
+  }) async {
+    final Map<String, dynamic> data = {
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    if (maxAbsences != null) data['maxAbsences'] = maxAbsences;
+    if (absenceCount != null) data['absenceCount'] = absenceCount;
+    if (lateCount != null) data['lateCount'] = lateCount;
+    await _coursesRef(deviceId, scheduleId).doc(courseId).update(data);
   }
 
   Future<void> updateCourseNotes(

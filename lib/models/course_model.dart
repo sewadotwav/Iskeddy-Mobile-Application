@@ -10,6 +10,9 @@ class Course {
   final List<MeetingTime> meetingTimes; 
   final DateTime createdAt;
   final DateTime updatedAt;
+  final int? maxAbsences;
+  final int absenceCount;
+  final int lateCount;
 
   const Course({
     required this.id,
@@ -19,6 +22,9 @@ class Course {
     required this.meetingTimes,
     required this.createdAt,
     required this.updatedAt,
+    this.maxAbsences,
+    this.absenceCount = 0,
+    this.lateCount = 0,
   });
 
   Map<String, dynamic> toMap() {
@@ -30,6 +36,9 @@ class Course {
       'meetingTimes': meetingTimes.map((m) => m.toMap()).toList(),
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'maxAbsences': maxAbsences,
+      'absenceCount': absenceCount,
+      'lateCount': lateCount,
     };
   }
 
@@ -56,6 +65,9 @@ class Course {
           .toList(),
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      maxAbsences: map['maxAbsences'] as int?,
+      absenceCount: (map['absenceCount'] as int?) ?? 0,
+      lateCount: (map['lateCount'] as int?) ?? 0,
     );
   }
 
@@ -65,6 +77,9 @@ class Course {
     String? notes,
     List<MeetingTime>? meetingTimes,
     DateTime? updatedAt,
+    int? maxAbsences,
+    int? absenceCount,
+    int? lateCount,
   }) {
     return Course(
       id: id,
@@ -74,6 +89,9 @@ class Course {
       meetingTimes: meetingTimes ?? this.meetingTimes,
       createdAt: createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
+      maxAbsences: maxAbsences ?? this.maxAbsences,
+      absenceCount: absenceCount ?? this.absenceCount,
+      lateCount: lateCount ?? this.lateCount,
     );
   }
 }

@@ -6,6 +6,7 @@ import '../constants/app_enums.dart';
 import '../constants/app_strings.dart';
 import '../services/firestore_service.dart';
 import '../utils/time_utils.dart';
+import '../utils/tracker_utils.dart';
 import 'app_text_styles.dart';
 import 'app_pill.dart';
 import 'pill_button.dart';
@@ -55,12 +56,14 @@ class CourseDetailSheet extends StatefulWidget {
 class _CourseDetailSheetState extends State<CourseDetailSheet> {
   late TextEditingController _notesController;
   late Course _course;
+  late TrackerState _trackerState;
 
   @override
   void initState() {
     super.initState();
     _course = widget.course;
     _notesController = TextEditingController(text: _course.notes ?? '');
+    _trackerState = computeTrackerState(_course);
   }
 
   @override
@@ -120,7 +123,7 @@ class _CourseDetailSheetState extends State<CourseDetailSheet> {
             formatTimeRange(meetingTime.startTime, meetingTime.endTime),
             style: appFont(
                 fontSize: 13,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 color: accentColor),
           ),
           if (meetingTime.instructor != null && meetingTime.instructor!.isNotEmpty) ...[
@@ -287,6 +290,77 @@ class _CourseDetailSheetState extends State<CourseDetailSheet> {
               ..._course.meetingTimes.map(_buildMeetingTime),
             const SizedBox(height: 24),
 
+            // Absence Status
+            Text(
+              'ABSENCE STATUS',
+              style: appFont(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: kTextSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (_course.maxAbsences == null)
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF2F2F2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(14),
+                child: Text(
+                  'Absence tracker not set up yet.',
+                  style: appFont(fontSize: 13, color: kTextSecondary),
+                ),
+              )
+            else ...[
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: const Color(0xFFE5E5E5)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('EFFECTIVE ABSENCES',
+                            style: appFont(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: kTextSecondary)),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${_trackerState.effectiveAbsences} / ${_course.maxAbsences}',
+                          style: appFont(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: _statusColor(_trackerState.status),
+                          ),
+                        ),
+                      ],
+                    ),
+                    _statusPill(_trackerState.status),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF2F2F2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.all(10),
+                child: Text(
+                  '${_course.absenceCount} raw absence(s) + ${_course.lateCount} late(s) (${_trackerState.latesConverted} effective) = ${_trackerState.effectiveAbsences} total',
+                  style: appFont(fontSize: 11, color: kTextSecondary),
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+
             // Notes
             Text(
               'NOTES',
@@ -338,6 +412,30 @@ class _CourseDetailSheetState extends State<CourseDetailSheet> {
       ),
     );
   }
+
+  Color _statusColor(TrackerStatus s) {
+    switch (s) {
+      case TrackerStatus.dropped:
+        return getSaturatedCourseColor(_course);
+      case TrackerStatus.atRisk:
+        return getCourseColor(_course);
+      default:
+        return accentColor;
+    }
+  }
+
+  Widget _statusPill(TrackerStatus s) {
+    switch (s) {
+      case TrackerStatus.dropped:
+        return AppPill(label: 'Dropped', fillColor: getSaturatedCourseColor(_course).withOpacity(0.15));
+      case TrackerStatus.atRisk:
+        return AppPill(label: 'At Risk', fillColor: getCourseColor(_course).withOpacity(0.15));
+      case TrackerStatus.safe:
+        return const AppPill(label: 'Safe', fillColor: Color(0xFFF2F2F2));
+      case TrackerStatus.notSetUp:
+        return const AppPill(label: 'Not Set Up', fillColor: Color(0xFFF2F2F2));
+    }
+  }
 }
 
 class _SmallPill extends StatelessWidget {
@@ -356,7 +454,7 @@ class _SmallPill extends StatelessWidget {
         label,
         style: appFont(
           fontSize: 10,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           color: accentColor,
         ),
       ),

@@ -15,6 +15,8 @@ import '../../services/firestore_service.dart';
 import '../../services/device_id_service.dart';
 import '../../models/schedule_model.dart';
 import '../../models/course_model.dart';
+import '../../components/absence_tracker_sheet.dart';
+import '../../utils/tracker_utils.dart';
 
 const Color kTextSecondary = Color(0xFF8A8A8A);
 
@@ -355,8 +357,10 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(left: 20, right: 20, top: 20),
-                    child: Row(
+                    child: Column(
                       children: [
+                        Row(
+                          children: [
                         Expanded(
                           child: Container(
                             decoration: BoxDecoration(
@@ -406,11 +410,19 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _AbsenceTrackerWidget(
+                        courses: courses,
+                        deviceId: _deviceId!,
+                        scheduleId: widget.scheduleId,
+                      ),
+                    ],
                   ),
                 ),
-                SliverToBoxAdapter(
+              ),
+              SliverToBoxAdapter(
                   child: _buildDayFilter(),
                 ),
               ],
@@ -466,6 +478,106 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _AbsenceTrackerWidget extends StatelessWidget {
+  final List<Course> courses;
+  final String deviceId;
+  final String scheduleId;
+
+  const _AbsenceTrackerWidget({
+    required this.courses,
+    required this.deviceId,
+    required this.scheduleId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => AbsenceTrackerSheet.show(
+        context,
+        deviceId: deviceId,
+        scheduleId: scheduleId,
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: accentColor, width: 2),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('ABSENCE TRACKER',
+                      style: appFont(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF8A8A8A))),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      _MiniStat(
+                        label: 'DROP RISK',
+                        value: '${dropRiskCount(courses)} Courses',
+                        valueColor: dropRiskCount(courses) > 0
+                            ? const Color(0xFFF59E0B)
+                            : accentColor,
+                      ),
+                      Container(
+                        width: 1,
+                        height: 32,
+                        color: const Color(0xFFE5E5E5),
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      _MiniStat(
+                        label: 'TOTAL ABSENCES',
+                        value: '${totalEffectiveAbsences(courses)}',
+                        valueColor: accentColor,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Color(0xFF8A8A8A)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color valueColor;
+
+  const _MiniStat({
+    required this.label,
+    required this.value,
+    required this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: appFont(
+                fontSize: 9, fontWeight: FontWeight.w600, color: const Color(0xFF8A8A8A))),
+        const SizedBox(height: 2),
+        Text(value,
+            style: appFont(
+                fontSize: 16, fontWeight: FontWeight.w800, color: valueColor)),
+      ],
     );
   }
 }

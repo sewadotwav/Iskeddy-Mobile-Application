@@ -46,16 +46,14 @@ service cloud.firestore {
       return has(data, field) && data[field] is list;
     }
 
-    function isValidClassMode(data) {
-      return isNonEmptyString(data, 'classMode')
-          && data.classMode in ['onsite', 'synchronous', 'asynchronous'];
+    function isOptionalInt(data, field) {
+      return !has(data, field)
+          || data[field] == null
+          || data[field] is int;
     }
 
-    // Updated: 4 fixed values only (Recitation removed)
-    function isValidCourseType(data) {
-      return !has(data, 'courseType')
-          || data.courseType == null
-          || data.courseType in ['Lecture', 'Lab', 'Seminar', 'Workshop'];
+    function isInt(data, field) {
+      return has(data, field) && data[field] is int;
     }
 
     function isValidColorHex(data) {
@@ -82,13 +80,11 @@ service cloud.firestore {
       return isNonEmptyString(data, 'id')
           && isNonEmptyString(data, 'title')
           && isValidColorHex(data)
-          && isValidClassMode(data)
-          && isValidCourseType(data)
           && isList(data, 'meetingTimes')
-          && isOptionalString(data, 'instructor')
-          && isOptionalString(data, 'roomNo')
-          && isOptionalString(data, 'courseType')
           && isOptionalString(data, 'notes')
+          && isOptionalInt(data, 'maxAbsences')
+          && isOptionalInt(data, 'absenceCount')
+          && isOptionalInt(data, 'lateCount')
           && isTimestamp(data, 'createdAt')
           && isTimestamp(data, 'updatedAt');
     }
