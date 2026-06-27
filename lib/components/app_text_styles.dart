@@ -6,6 +6,7 @@ TextStyle appFont({
   FontWeight fontWeight = FontWeight.w400,
   Color color = accentColor,
   bool italic = false,
+  double? height,
 }) {
   return TextStyle(
     fontFamily: 'ZalandoSansSemiExpanded',
@@ -13,6 +14,7 @@ TextStyle appFont({
     fontWeight: fontWeight,
     fontStyle: italic ? FontStyle.italic : FontStyle.normal,
     color: color,
+    height: height,
     decoration: TextDecoration.none,
   );
 }

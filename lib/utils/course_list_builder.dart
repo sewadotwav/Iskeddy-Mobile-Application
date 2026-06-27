@@ -140,7 +140,7 @@ class GroupedCourseList extends StatelessWidget {
                   cardContent,
                   if (i < entries.length - 1) ...[
                     if (hasBreakBefore(entries[i].meetingTime, entries[i + 1].meetingTime))
-                      const _BreakDivider()
+                      _BreakDivider(label: formatBreakDuration(entries[i].meetingTime, entries[i + 1].meetingTime))
                     else
                       const SizedBox(height: 8),
                   ],
@@ -157,7 +157,8 @@ class GroupedCourseList extends StatelessWidget {
 }
 
 class _BreakDivider extends StatelessWidget {
-  const _BreakDivider();
+  final String label;
+  const _BreakDivider({required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -171,12 +172,12 @@ class _BreakDivider extends StatelessWidget {
               color: const Color(0xFFE5E5E5),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: AppPill(
-              label: 'Break',
-              fillColor: Color(0xFFF2F2F2),
-              textColor: Color(0xFF8A8A8A),
+              label: label,
+              fillColor: const Color(0xFFF2F2F2),
+              textColor: const Color(0xFF8A8A8A),
             ),
           ),
           Expanded(
@@ -239,7 +240,7 @@ class TodayCourseList extends StatelessWidget {
             ),
             if (i < entries.length - 1) ...[
               if (hasBreakBefore(entries[i].meetingTime, entries[i + 1].meetingTime))
-                const _BreakDivider()
+                _BreakDivider(label: formatBreakDuration(entries[i].meetingTime, entries[i + 1].meetingTime))
               else
                 const SizedBox(height: 8),
             ],

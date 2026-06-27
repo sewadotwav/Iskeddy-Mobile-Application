@@ -28,6 +28,20 @@ bool hasBreakBefore(MeetingTime a, MeetingTime b) {
   return timeToMinutes(b.startTime) - timeToMinutes(a.endTime) >= 30;
 }
 
+String formatBreakDuration(MeetingTime a, MeetingTime b) {
+  final diff = timeToMinutes(b.startTime) - timeToMinutes(a.endTime);
+  if (diff <= 0) return '';
+  final hours = diff ~/ 60;
+  final minutes = diff % 60;
+  if (hours > 0 && minutes > 0) {
+    return 'Break: ${hours}hr and ${minutes}mins';
+  } else if (hours > 0) {
+    return 'Break: ${hours}hr';
+  } else {
+    return 'Break: ${minutes}mins';
+  }
+}
+
 int totalWeeklyMinutes(List<Course> courses) {
   int total = 0;
   for (final course in courses) {

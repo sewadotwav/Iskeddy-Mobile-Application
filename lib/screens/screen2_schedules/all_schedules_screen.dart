@@ -15,6 +15,7 @@ import '../../constants/app_strings.dart';
 import '../screen3_detail/schedule_detail_screen.dart';
 import '../../models/schedule_model.dart';
 import '../../models/course_model.dart';
+import '../../components/digital_clock.dart';
 
 class AllSchedulesScreen extends StatefulWidget {
   const AllSchedulesScreen({super.key});
@@ -119,6 +120,11 @@ class _AllSchedulesScreenState extends State<AllSchedulesScreen> {
                         ? _buildMultiSelectHeader()
                         : _buildNormalHeader(),
                   ),
+                  if (!isMultiSelect)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+                      child: DigitalClock(),
+                    ),
                   Expanded(
                     child: _schedules.isEmpty
                         ? EmptyState(

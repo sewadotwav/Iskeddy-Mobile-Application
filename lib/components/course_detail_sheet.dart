@@ -121,7 +121,7 @@ class _CourseDetailSheetState extends State<CourseDetailSheet> {
             style: appFont(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: kTextSecondary),
+                color: accentColor),
           ),
           if (meetingTime.instructor != null && meetingTime.instructor!.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -132,7 +132,7 @@ class _CourseDetailSheetState extends State<CourseDetailSheet> {
                 Expanded(
                   child: Text(
                     meetingTime.instructor!,
-                    style: appFont(fontSize: 12, color: kTextSecondary),
+                    style: appFont(fontSize: 12, color: accentColor),
                   ),
                 ),
               ],
@@ -147,7 +147,7 @@ class _CourseDetailSheetState extends State<CourseDetailSheet> {
                 Expanded(
                   child: Text(
                     meetingTime.roomNo!,
-                    style: appFont(fontSize: 12, color: kTextSecondary),
+                    style: appFont(fontSize: 12, color: accentColor),
                   ),
                 ),
               ],
@@ -357,7 +357,7 @@ class _SmallPill extends StatelessWidget {
         style: appFont(
           fontSize: 10,
           fontWeight: FontWeight.w600,
-          color: kTextSecondary,
+          color: accentColor,
         ),
       ),
     );
