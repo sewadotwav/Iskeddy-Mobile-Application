@@ -4,6 +4,7 @@ import '../components/empty_state.dart';
 import '../components/course_card.dart';
 import '../components/app_pill.dart';
 import '../components/course_editor_sheet.dart';
+import '../components/course_detail_sheet.dart';
 import '../components/app_text_styles.dart';
 import '../constants/app_strings.dart';
 import 'time_utils.dart';
@@ -81,6 +82,12 @@ class GroupedCourseList extends StatelessWidget {
                 meetingTime: entry.meetingTime,
                 scheduleId: scheduleId,
                 deviceId: deviceId,
+                onCardTap: () => CourseDetailSheet.show(
+                  context,
+                  deviceId: deviceId,
+                  scheduleId: scheduleId,
+                  course: entry.course,
+                ),
                 onEditTap: () => CourseEditorSheet.show(
                   context,
                   deviceId: deviceId,
@@ -103,6 +110,12 @@ class GroupedCourseList extends StatelessWidget {
                           deviceId: deviceId,
                           isMultiSelectMode: isMultiSelect,
                           isSelected: selectedIds.contains(entry.course.id),
+                          onCardTap: () => CourseDetailSheet.show(
+                            context,
+                            deviceId: deviceId,
+                            scheduleId: scheduleId,
+                            course: entry.course,
+                          ),
                           onSelectToggle: onSelectToggle != null 
                               ? () => onSelectToggle!(entry.course.id) 
                               : null,
@@ -215,6 +228,12 @@ class TodayCourseList extends StatelessWidget {
               meetingTime: entry.meetingTime,
               scheduleId: scheduleId,
               deviceId: deviceId,
+              onCardTap: () => CourseDetailSheet.show(
+                context,
+                deviceId: deviceId,
+                scheduleId: scheduleId,
+                course: entry.course,
+              ),
               onEditTap: () {},
               readOnly: true,
             ),

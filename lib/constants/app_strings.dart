@@ -5,6 +5,7 @@ class AppStrings {
   static const String scheduleUnpinned = 'Default timetable removed';
   static const String changesSaved = 'Changes saved';
   static const String scheduleDeleted = 'Schedule deleted';
+  static const String noteSaved = 'Note saved';
 
   static String courseAdded(String title) => '$title added';
   static String courseRemoved(String title) => '$title removed';

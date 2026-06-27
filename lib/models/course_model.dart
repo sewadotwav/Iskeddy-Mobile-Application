@@ -6,8 +6,7 @@ class Course {
   final String id;
   final String title;
   final String colorHex;
-  final String? instructor;
-  final String? roomNo;
+  final String? notes;
   final List<MeetingTime> meetingTimes; 
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -16,8 +15,7 @@ class Course {
     required this.id,
     required this.title,
     required this.colorHex,
-    this.instructor,
-    this.roomNo,
+    this.notes,
     required this.meetingTimes,
     required this.createdAt,
     required this.updatedAt,
@@ -28,8 +26,7 @@ class Course {
       'id': id,
       'title': title,
       'colorHex': colorHex,
-      'instructor': instructor,
-      'roomNo': roomNo,
+      'notes': notes,
       'meetingTimes': meetingTimes.map((m) => m.toMap()).toList(),
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
@@ -40,18 +37,21 @@ class Course {
     // Fallbacks for older courses that have classMode and courseType at the root
     final ClassMode? rootClassMode = map['classMode'] != null ? ClassModeLabel.fromValue(map['classMode']) : null;
     final CourseType? rootCourseType = map.containsKey('courseType') ? CourseTypeLabel.fromValue(map['courseType']) : null;
+    final String? rootInstructor = map['instructor'] as String?;
+    final String? rootRoomNo = map['roomNo'] as String?;
 
     return Course(
       id: map['id'] ?? '',
       title: map['title'] ?? '',
       colorHex: map['colorHex'] ?? '#F9E9D0',
-      instructor: map['instructor'],
-      roomNo: map['roomNo'],
+      notes: map['notes'],
       meetingTimes: (map['meetingTimes'] as List<dynamic>? ?? [])
           .map((m) => MeetingTime.fromMap(
                 m as Map<String, dynamic>,
                 fallbackClassMode: rootClassMode,
                 fallbackCourseType: rootCourseType,
+                fallbackInstructor: rootInstructor,
+                fallbackRoomNo: rootRoomNo,
               ))
           .toList(),
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -62,8 +62,7 @@ class Course {
   Course copyWith({
     String? title,
     String? colorHex,
-    String? instructor,
-    String? roomNo,
+    String? notes,
     List<MeetingTime>? meetingTimes,
     DateTime? updatedAt,
   }) {
@@ -71,8 +70,7 @@ class Course {
       id: id,
       title: title ?? this.title,
       colorHex: colorHex ?? this.colorHex,
-      instructor: instructor ?? this.instructor,
-      roomNo: roomNo ?? this.roomNo,
+      notes: notes ?? this.notes,
       meetingTimes: meetingTimes ?? this.meetingTimes,
       createdAt: createdAt,
       updatedAt: updatedAt ?? DateTime.now(),

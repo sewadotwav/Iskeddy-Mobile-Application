@@ -24,6 +24,8 @@ class _MeetingTimeInput {
   String endTime;
   ClassMode classMode;
   CourseType? courseType;
+  TextEditingController instructorController;
+  TextEditingController roomController;
 
   _MeetingTimeInput({
     required this.days,
@@ -31,7 +33,14 @@ class _MeetingTimeInput {
     required this.endTime,
     required this.classMode,
     this.courseType,
+    required this.instructorController,
+    required this.roomController,
   });
+
+  void dispose() {
+    instructorController.dispose();
+    roomController.dispose();
+  }
 }
 
 class CourseEditorSheet extends StatefulWidget {
@@ -74,8 +83,6 @@ class CourseEditorSheet extends StatefulWidget {
 
 class _CourseEditorSheetState extends State<CourseEditorSheet> {
   final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _instructorController = TextEditingController();
-  final TextEditingController _roomController = TextEditingController();
 
   int _selectedColorIndex = 0;
   List<_MeetingTimeInput> _meetingTimes = [];
@@ -88,19 +95,25 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       _titleController.text = c.title;
       _selectedColorIndex = courseColorHexValues.indexOf(c.colorHex);
       if (_selectedColorIndex == -1) _selectedColorIndex = 0;
-      _instructorController.text = c.instructor ?? '';
-      _roomController.text = c.roomNo ?? '';
-      
       _meetingTimes = c.meetingTimes.map((m) => _MeetingTimeInput(
         days: List.from(m.days),
         startTime: m.startTime,
         endTime: m.endTime,
         classMode: m.classMode,
         courseType: m.courseType,
+        instructorController: TextEditingController(text: m.instructor ?? ''),
+        roomController: TextEditingController(text: m.roomNo ?? ''),
       )).toList();
     } else {
       _meetingTimes = [
-        _MeetingTimeInput(days: [], startTime: '08:00', endTime: '09:30', classMode: ClassMode.onsite)
+        _MeetingTimeInput(
+          days: [], 
+          startTime: '08:00', 
+          endTime: '09:30', 
+          classMode: ClassMode.onsite,
+          instructorController: TextEditingController(),
+          roomController: TextEditingController(),
+        )
       ];
     }
   }
@@ -108,8 +121,9 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
   @override
   void dispose() {
     _titleController.dispose();
-    _instructorController.dispose();
-    _roomController.dispose();
+    for (var m in _meetingTimes) {
+      m.dispose();
+    }
     super.dispose();
   }
 
@@ -226,14 +240,14 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       id: isAdd ? const Uuid().v4() : widget.course!.id,
       title: _titleController.text.trim(),
       colorHex: courseColorHexValues[_selectedColorIndex],
-      instructor: _instructorController.text.trim().isEmpty ? null : _instructorController.text.trim(),
-      roomNo: _roomController.text.trim().isEmpty ? null : _roomController.text.trim(),
       meetingTimes: _meetingTimes.map((m) => MeetingTime(
         days: m.days,
         startTime: m.startTime,
         endTime: m.endTime,
         classMode: m.classMode,
         courseType: m.courseType,
+        instructor: m.instructorController.text.trim().isEmpty ? null : m.instructorController.text.trim(),
+        roomNo: m.roomController.text.trim().isEmpty ? null : m.roomController.text.trim(),
       )).toList(),
       createdAt: isAdd ? now : widget.course!.createdAt,
       updatedAt: now,
@@ -481,6 +495,59 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       );
       items.add(const SizedBox(height: 16));
 
+      items.add(
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionLabel('INSTRUCTOR'),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _meetingTimes[i].instructorController,
+                    style: const TextStyle(fontFamily: 'appFont', fontSize: 15),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: const Color(0xFFF2F2F2),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionLabel('ROOM NO.'),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _meetingTimes[i].roomController,
+                    style: const TextStyle(fontFamily: 'appFont', fontSize: 15),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: const Color(0xFFF2F2F2),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+      items.add(const SizedBox(height: 16));
+
       items.add(_buildSectionLabel('MEETING DAYS'));
       items.add(const SizedBox(height: 8));
       items.add(_buildDaysRow(i));
@@ -587,7 +654,14 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
               child: TextButton.icon(
                 onPressed: () {
                   setState(() {
-                    _meetingTimes.add(_MeetingTimeInput(days: [], startTime: '08:00', endTime: '09:30', classMode: ClassMode.onsite));
+                    _meetingTimes.add(_MeetingTimeInput(
+                      days: [], 
+                      startTime: '08:00', 
+                      endTime: '09:30', 
+                      classMode: ClassMode.onsite,
+                      instructorController: TextEditingController(),
+                      roomController: TextEditingController(),
+                    ));
                   });
                 },
                 icon: const Icon(Icons.add_circle_outline, color: accentColor),
@@ -604,57 +678,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
             ),
             const SizedBox(height: 24),
 
-            // Instructor and Room No
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionLabel('INSTRUCTOR'),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _instructorController,
-                        style: const TextStyle(fontFamily: 'appFont', fontSize: 15),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: const Color(0xFFF2F2F2),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionLabel('ROOM NO.'),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _roomController,
-                        style: const TextStyle(fontFamily: 'appFont', fontSize: 15),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: const Color(0xFFF2F2F2),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
 
             // Save
             PillButton(

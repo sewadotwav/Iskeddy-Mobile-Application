@@ -120,6 +120,14 @@ class FirestoreService {
     await _coursesRef(deviceId, scheduleId).doc(course.id).set(data);
   }
 
+  Future<void> updateCourseNotes(
+      String deviceId, String scheduleId, String courseId, String notes) async {
+    await _coursesRef(deviceId, scheduleId).doc(courseId).update({
+      'notes': notes,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> deleteCourse(
       String deviceId, String scheduleId, String courseId) async {
     await _coursesRef(deviceId, scheduleId).doc(courseId).delete();

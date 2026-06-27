@@ -18,6 +18,7 @@ class CourseCard extends StatelessWidget {
   final String scheduleId;
   final String deviceId;
   final VoidCallback onEditTap;
+  final VoidCallback? onCardTap;
   final bool readOnly;
 
   // Multi-select properties
@@ -33,6 +34,7 @@ class CourseCard extends StatelessWidget {
     required this.scheduleId,
     required this.deviceId,
     required this.onEditTap,
+    this.onCardTap,
     this.readOnly = false,
     this.isMultiSelectMode = false,
     this.isSelected = false,
@@ -44,7 +46,7 @@ class CourseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onLongPress: isMultiSelectMode ? null : onLongPress,
-      onTap: isMultiSelectMode ? onSelectToggle : null,
+      onTap: isMultiSelectMode ? onSelectToggle : onCardTap,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
@@ -129,14 +131,14 @@ class CourseCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (course.roomNo != null && course.roomNo!.isNotEmpty) ...[
+            if (meetingTime.roomNo != null && meetingTime.roomNo!.isNotEmpty) ...[
               const SizedBox(height: 4),
               Row(
                 children: [
                   const Icon(Icons.location_on_outlined, size: 14, color: accentColor),
                   const SizedBox(width: 6),
                   Text(
-                    course.roomNo!,
+                    meetingTime.roomNo!,
                     style: appFont(fontSize: 12, color: accentColor),
                   ),
                 ],
