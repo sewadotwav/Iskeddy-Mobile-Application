@@ -16,6 +16,8 @@ import '../screen3_detail/schedule_detail_screen.dart';
 import '../../models/schedule_model.dart';
 import '../../models/course_model.dart';
 import '../../components/digital_clock.dart';
+import '../../components/schedule_heatmap.dart';
+
 
 class AllSchedulesScreen extends StatefulWidget {
   const AllSchedulesScreen({super.key});
@@ -32,6 +34,10 @@ class _AllSchedulesScreenState extends State<AllSchedulesScreen> {
   List<Schedule> _schedules = [];
   bool _schedulesLoading = true;
   StreamSubscription<List<Schedule>>? _schedulesSub;
+
+  // Pinned schedule courses for the heatmap
+  List<Course> _pinnedCourses = [];
+  StreamSubscription<List<Course>>? _pinnedCoursesSub;
 
   // ── Selection state as ValueNotifiers — changes never cause Scaffold rebuild ──
   final ValueNotifier<bool> _isMultiSelectMode = ValueNotifier(false);
@@ -63,12 +69,28 @@ class _AllSchedulesScreenState extends State<AllSchedulesScreen> {
         _schedules = sorted;
         _schedulesLoading = false;
       });
+      // Re-subscribe courses whenever pinned schedule changes
+      final pinned = sorted.firstWhere(
+        (s) => s.isPinned,
+        orElse: () => sorted.isNotEmpty ? sorted.first : Schedule(id: '', name: '', isPinned: false, createdAt: DateTime.now(), updatedAt: DateTime.now()),
+      );
+      if (sorted.isEmpty) {
+        _pinnedCoursesSub?.cancel();
+        _pinnedCourses = [];
+        return;
+      }
+      _pinnedCoursesSub?.cancel();
+      _pinnedCoursesSub = _firestoreService.getCoursesStream(deviceId, pinned.id).listen((courses) {
+        if (!mounted) return;
+        setState(() => _pinnedCourses = courses);
+      });
     });
   }
 
   @override
   void dispose() {
     _schedulesSub?.cancel();
+    _pinnedCoursesSub?.cancel();
     _isMultiSelectMode.dispose();
     _selectedIds.dispose();
     super.dispose();
@@ -120,11 +142,23 @@ class _AllSchedulesScreenState extends State<AllSchedulesScreen> {
                         ? _buildMultiSelectHeader()
                         : _buildNormalHeader(),
                   ),
-                  if (!isMultiSelect)
+                  if (!isMultiSelect) ...[
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
                       child: DigitalClock(),
                     ),
+                    if (_schedules.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 20.0, right: 20.0, bottom: 8.0),
+                        child: ScheduleHeatmap(
+                          pinnedSchedule: _schedules.firstWhere(
+                            (s) => s.isPinned,
+                            orElse: () => _schedules.first,
+                          ),
+                          courses: _pinnedCourses,
+                        ),
+                      ),
+                  ],
                   Expanded(
                     child: _schedules.isEmpty
                         ? EmptyState(

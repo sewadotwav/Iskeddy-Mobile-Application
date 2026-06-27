@@ -526,9 +526,7 @@ class _AbsenceTrackerWidget extends StatelessWidget {
                       _MiniStat(
                         label: 'DROP RISK',
                         value: '${dropRiskCount(courses)} Courses',
-                        valueColor: dropRiskCount(courses) > 0
-                            ? const Color(0xFFF59E0B)
-                            : accentColor,
+                        valueColor: accentColor,
                       ),
                       Container(
                         width: 1,

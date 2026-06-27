@@ -11,6 +11,7 @@ import '../../services/firestore_service.dart';
 import '../../services/device_id_service.dart';
 import '../../models/schedule_model.dart';
 import '../../models/course_model.dart';
+import '../../components/next_class_widget.dart';
 
 class DefaultTimetableScreen extends StatefulWidget {
   final VoidCallback? onGoToSchedules;
@@ -150,21 +151,26 @@ class _DefaultTimetableScreenState extends State<DefaultTimetableScreen> {
                       final entries = coursesForDay(courses, today);
 
                       if (entries.isEmpty) {
-                        return SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Center(
-                            child: EmptyState(
-                              icon: Icons.wb_sunny_outlined,
-                              title: AppStrings.noClassesToday(),
-                              subtitle: null,
-                              buttonLabel: null,
+                        return SliverList(
+                          delegate: SliverChildListDelegate([
+                            NextClassWidget(courses: courses),
+                            const SizedBox(height: 24),
+                            Center(
+                              child: EmptyState(
+                                icon: Icons.wb_sunny_outlined,
+                                title: AppStrings.noClassesToday(),
+                                subtitle: null,
+                                buttonLabel: null,
+                              ),
                             ),
-                          ),
+                          ]),
                         );
                       }
 
                       return SliverList(
                         delegate: SliverChildListDelegate([
+                          NextClassWidget(courses: courses),
+                          const SizedBox(height: 16),
                           TodayCourseList(
                             courses: courses,
                             scheduleId: schedule.id,

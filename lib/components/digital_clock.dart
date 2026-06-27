@@ -50,7 +50,7 @@ class _DigitalClockState extends State<DigitalClock> {
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
@@ -88,7 +88,7 @@ class _DigitalClockState extends State<DigitalClock> {
           Text(
             amPmFormat.format(_now),
             style: appFont(
-              fontSize: 48,
+              fontSize: 44,
               fontWeight: FontWeight.w800,
               color: accentColor,
               height: 1.0,

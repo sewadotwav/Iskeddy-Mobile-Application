@@ -254,16 +254,25 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
     );
 
     final deviceId = await DeviceIdService.getDeviceId();
-    if (isAdd) {
-      await FirestoreService().addCourse(deviceId, widget.scheduleId, saved);
+    try {
+      if (isAdd) {
+        await FirestoreService().addCourse(deviceId, widget.scheduleId, saved);
+        if (!mounted) return;
+        AppToast.show(context, AppStrings.courseAdded(saved.title));
+      } else {
+        await FirestoreService().updateCourse(deviceId, widget.scheduleId, saved);
+        if (!mounted) return;
+        AppToast.show(context, AppStrings.changesSaved);
+      }
+    } catch (e) {
       if (!mounted) return;
-      AppToast.show(context, AppStrings.courseAdded(saved.title));
-    } else {
-      await FirestoreService().updateCourse(deviceId, widget.scheduleId, saved);
-      if (!mounted) return;
-      AppToast.show(context, AppStrings.changesSaved);
+      AppToast.show(
+        context,
+        'Could not save. Check your connection and try again.',
+        isError: true,
+      );
+      return;
     }
-    
     Navigator.of(context).pop();
   }
 
@@ -275,11 +284,20 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       cancelLabel: AppStrings.cancel,
       confirmLabel: AppStrings.delete,
       onConfirm: () async {
-        final deviceId = await DeviceIdService.getDeviceId();
-        await FirestoreService().deleteCourse(deviceId, widget.scheduleId, widget.course!.id);
-        if (!mounted) return;
-        AppToast.show(context, AppStrings.courseRemoved(widget.course!.title));
-        Navigator.of(context).pop();
+        try {
+          final deviceId = await DeviceIdService.getDeviceId();
+          await FirestoreService().deleteCourse(deviceId, widget.scheduleId, widget.course!.id);
+          if (!mounted) return;
+          AppToast.show(context, AppStrings.courseRemoved(widget.course!.title));
+          Navigator.of(context).pop();
+        } catch (e) {
+          if (!mounted) return;
+          AppToast.show(
+            context,
+            'Could not delete. Check your connection and try again.',
+            isError: true,
+          );
+        }
       },
     );
   }
