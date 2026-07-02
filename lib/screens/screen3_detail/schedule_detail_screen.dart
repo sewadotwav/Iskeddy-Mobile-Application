@@ -324,7 +324,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
               child: Text(
                 letter,
                 style: TextStyle(
-                  fontFamily: 'appFont',
+                  fontFamily: 'ZalandoSansSemiExpanded',
                   color: isSelected ? Colors.white : accentColor,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                   fontSize: 13,

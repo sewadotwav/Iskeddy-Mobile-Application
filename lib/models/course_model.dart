@@ -5,6 +5,7 @@ import 'meeting_time_model.dart';
 class Course {
   final String id;
   final String title;
+  final String section;
   final String colorHex;
   final String? notes;
   final List<MeetingTime> meetingTimes; 
@@ -17,6 +18,7 @@ class Course {
   const Course({
     required this.id,
     required this.title,
+    required this.section,
     required this.colorHex,
     this.notes,
     required this.meetingTimes,
@@ -31,6 +33,7 @@ class Course {
     return {
       'id': id,
       'title': title,
+      'section': section,
       'colorHex': colorHex,
       'notes': notes,
       'meetingTimes': meetingTimes.map((m) => m.toMap()).toList(),
@@ -52,6 +55,7 @@ class Course {
     return Course(
       id: map['id'] ?? '',
       title: map['title'] ?? '',
+      section: map['section'] ?? '',
       colorHex: map['colorHex'] ?? '#F9E9D0',
       notes: map['notes'],
       meetingTimes: (map['meetingTimes'] as List<dynamic>? ?? [])
@@ -73,6 +77,7 @@ class Course {
 
   Course copyWith({
     String? title,
+    String? section,
     String? colorHex,
     String? notes,
     List<MeetingTime>? meetingTimes,
@@ -84,6 +89,7 @@ class Course {
     return Course(
       id: id,
       title: title ?? this.title,
+      section: section ?? this.section,
       colorHex: colorHex ?? this.colorHex,
       notes: notes ?? this.notes,
       meetingTimes: meetingTimes ?? this.meetingTimes,

@@ -79,6 +79,7 @@ service cloud.firestore {
     function isValidCourse(data) {
       return isNonEmptyString(data, 'id')
           && isNonEmptyString(data, 'title')
+          && isNonEmptyString(data, 'section')
           && isValidColorHex(data)
           && isList(data, 'meetingTimes')
           && isOptionalString(data, 'notes')

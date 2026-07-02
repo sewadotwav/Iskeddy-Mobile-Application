@@ -83,6 +83,7 @@ class CourseEditorSheet extends StatefulWidget {
 
 class _CourseEditorSheetState extends State<CourseEditorSheet> {
   final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _sectionController = TextEditingController();
 
   int _selectedColorIndex = 0;
   List<_MeetingTimeInput> _meetingTimes = [];
@@ -93,6 +94,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
     final c = widget.course;
     if (c != null) {
       _titleController.text = c.title;
+      _sectionController.text = c.section;
       _selectedColorIndex = courseColorHexValues.indexOf(c.colorHex);
       if (_selectedColorIndex == -1) _selectedColorIndex = 0;
       _meetingTimes = c.meetingTimes.map((m) => _MeetingTimeInput(
@@ -121,6 +123,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
   @override
   void dispose() {
     _titleController.dispose();
+    _sectionController.dispose();
     for (var m in _meetingTimes) {
       m.dispose();
     }
@@ -136,26 +139,25 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       context: context,
       initialTime: initialTime,
       builder: (BuildContext context, Widget? child) {
-        const mintGreen = Color(0xFF82D3B4);
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: mintGreen,
+            colorScheme: const ColorScheme.light(
+              primary: Colors.black,
               onPrimary: Colors.white,
-              primaryContainer: mintGreen.withOpacity(0.2),
+              primaryContainer: Colors.black12,
               onPrimaryContainer: Colors.black,
-              secondaryContainer: mintGreen.withOpacity(0.2),
+              secondaryContainer: Colors.black12,
               onSecondaryContainer: Colors.black,
               surface: Colors.white,
               onSurface: Colors.black,
-              error: mintGreen,
+              error: Colors.red,
             ),
             dialogBackgroundColor: Colors.white,
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
-                foregroundColor: mintGreen,
+                foregroundColor: Colors.black,
                 textStyle: const TextStyle(
-                  fontFamily: 'appFont',
+                  fontFamily: 'ZalandoSansSemiExpanded',
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -164,7 +166,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
               backgroundColor: Colors.white,
               hourMinuteColor: MaterialStateColor.resolveWith((states) {
                 if (states.contains(MaterialState.selected)) {
-                  return mintGreen.withOpacity(0.3);
+                  return Colors.black12;
                 }
                 return const Color(0xFFF2F2F2);
               }),
@@ -176,17 +178,17 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
               }),
               dayPeriodColor: MaterialStateColor.resolveWith((states) {
                 if (states.contains(MaterialState.selected)) {
-                  return mintGreen.withOpacity(0.3);
+                  return Colors.black;
                 }
                 return const Color(0xFFF2F2F2);
               }),
               dayPeriodTextColor: MaterialStateColor.resolveWith((states) {
                 if (states.contains(MaterialState.selected)) {
-                  return Colors.black;
+                  return Colors.white;
                 }
                 return Colors.black87;
               }),
-              dialHandColor: mintGreen,
+              dialHandColor: Colors.black,
               dialBackgroundColor: const Color(0xFFF2F2F2),
               dialTextColor: MaterialStateColor.resolveWith((states) {
                 if (states.contains(MaterialState.selected)) {
@@ -194,7 +196,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                 }
                 return Colors.black87;
               }),
-              entryModeIconColor: mintGreen,
+              entryModeIconColor: Colors.black,
             ),
           ),
           child: child!,
@@ -226,7 +228,21 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       return;
     }
 
-    for (var m in _meetingTimes) {
+    if (_sectionController.text.trim().isEmpty) {
+      AppToast.show(context, 'Course section is required', isError: true);
+      return;
+    }
+
+    for (int i = 0; i < _meetingTimes.length; i++) {
+      var m = _meetingTimes[i];
+      if (m.days.isEmpty) {
+        AppToast.show(context, 'Please pick at least one day for meeting time ${i + 1}', isError: true);
+        return;
+      }
+      if (m.roomController.text.trim().isEmpty) {
+        AppToast.show(context, 'Room number is required for meeting time ${i + 1}', isError: true);
+        return;
+      }
       if (timeToMinutes(m.endTime) <= timeToMinutes(m.startTime)) {
         AppToast.show(context, AppStrings.invalidTimeMessage, isError: true);
         return;
@@ -239,6 +255,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
     final saved = Course(
       id: isAdd ? const Uuid().v4() : widget.course!.id,
       title: _titleController.text.trim(),
+      section: _sectionController.text.trim(),
       colorHex: courseColorHexValues[_selectedColorIndex],
       meetingTimes: _meetingTimes.map((m) => MeetingTime(
         days: m.days,
@@ -306,7 +323,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
     return Text(
       label,
       style: const TextStyle(
-        fontFamily: 'appFont',
+        fontFamily: 'ZalandoSansSemiExpanded',
         fontSize: 11,
         fontWeight: FontWeight.w600,
         color: Color(0xFF757575),
@@ -403,7 +420,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
             child: Text(
               letter,
               style: TextStyle(
-                fontFamily: 'appFont',
+                fontFamily: 'ZalandoSansSemiExpanded',
                 color: isSelected ? Colors.white : accentColor,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                 fontSize: 13,
@@ -433,7 +450,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
             Text(
               _formatTimeDisplay(timeStr),
               style: const TextStyle(
-                fontFamily: 'appFont',
+                fontFamily: 'ZalandoSansSemiExpanded',
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: accentColor,
@@ -459,7 +476,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
               Text(
                 'Meeting Time ${i + 1}',
                 style: const TextStyle(
-                  fontFamily: 'appFont',
+                  fontFamily: 'ZalandoSansSemiExpanded',
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
                   color: Color(0xFF757575),
@@ -524,7 +541,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                   const SizedBox(height: 8),
                   TextField(
                     controller: _meetingTimes[i].instructorController,
-                    style: const TextStyle(fontFamily: 'appFont', fontSize: 15),
+                    style: const TextStyle(fontFamily: 'ZalandoSansSemiExpanded', fontSize: 15),
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: const Color(0xFFF2F2F2),
@@ -547,7 +564,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                   const SizedBox(height: 8),
                   TextField(
                     controller: _meetingTimes[i].roomController,
-                    style: const TextStyle(fontFamily: 'appFont', fontSize: 15),
+                    style: const TextStyle(fontFamily: 'ZalandoSansSemiExpanded', fontSize: 15),
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: const Color(0xFFF2F2F2),
@@ -619,7 +636,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                 Text(
                   widget.course == null ? 'Add Course' : 'Edit Course',
                   style: const TextStyle(
-                    fontFamily: 'appFont',
+                    fontFamily: 'ZalandoSansSemiExpanded',
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
@@ -632,26 +649,67 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
             ),
             const SizedBox(height: 24),
 
-            // Title
-            _buildSectionLabel('COURSE TITLE'),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _titleController,
-              style: const TextStyle(fontFamily: 'ZalandoSansSemiExpanded', fontSize: 15),
-              decoration: InputDecoration(
-                hintText: 'e.g. Intro to Psychology',
-                hintStyle: const TextStyle(
-                  fontFamily: 'ZalandoSansSemiExpanded',
-                  color: Color(0xFF757575),
+            // Title & Section
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionLabel('COURSE TITLE'),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _titleController,
+                        style: const TextStyle(fontFamily: 'ZalandoSansSemiExpanded', fontSize: 15),
+                        decoration: InputDecoration(
+                          hintText: 'e.g. Intro to Psychology',
+                          hintStyle: const TextStyle(
+                            fontFamily: 'ZalandoSansSemiExpanded',
+                            color: Color(0xFF757575),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFF2F2F2),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                filled: true,
-                fillColor: const Color(0xFFF2F2F2),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 1,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionLabel('SECTION'),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _sectionController,
+                        style: const TextStyle(fontFamily: 'ZalandoSansSemiExpanded', fontSize: 15),
+                        decoration: InputDecoration(
+                          hintText: 'e.g. A',
+                          hintStyle: const TextStyle(
+                            fontFamily: 'ZalandoSansSemiExpanded',
+                            color: Color(0xFF757575),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFF2F2F2),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              ),
+              ],
             ),
             const SizedBox(height: 24),
 
@@ -685,7 +743,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                 icon: const Icon(Icons.add_circle_outline, color: accentColor),
                 label: const Text(
                   '+ Add another meeting time',
-                  style: TextStyle(color: accentColor, fontFamily: 'appFont'),
+                  style: TextStyle(color: accentColor, fontFamily: 'ZalandoSansSemiExpanded'),
                 ),
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.zero,
@@ -719,7 +777,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
                 child: const Text(
                   'Delete',
                   style: TextStyle(
-                    fontFamily: 'appFont',
+                    fontFamily: 'ZalandoSansSemiExpanded',
                     color: Color(0xFFFF5252),
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
