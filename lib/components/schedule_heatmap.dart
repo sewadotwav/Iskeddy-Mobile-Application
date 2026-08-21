@@ -33,7 +33,7 @@ Map<String, double> _hoursPerDay(List<Course> courses) {
 Color _cellColor(double hours, double maxHours) {
   if (hours == 0 || maxHours == 0) {
     // No class — very faint tint
-    return _heatBase.withOpacity(0.18);
+    return _heatBase.withValues(alpha: 0.18);
   }
   // Normalize 0..1 where 1 is the busiest day
   final t = (hours / maxHours).clamp(0.0, 1.0);

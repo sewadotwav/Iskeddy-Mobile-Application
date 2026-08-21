@@ -43,7 +43,7 @@ class ScheduleCard extends StatelessWidget {
           border: isSelected ? Border.all(color: accentColor, width: 2) : null,
           boxShadow: [
             BoxShadow(
-              color: accentColor.withOpacity(0.06),
+              color: accentColor.withValues(alpha: 0.06),
               blurRadius: 12,
               offset: const Offset(0, 3),
             ),

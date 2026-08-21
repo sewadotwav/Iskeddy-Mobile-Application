@@ -29,7 +29,7 @@ class ConfirmDialog extends StatelessWidget {
   }) {
     return showDialog(
       context: context,
-      barrierColor: accentColor.withOpacity(0.25),
+      barrierColor: accentColor.withValues(alpha: 0.25),
       builder: (_) => ConfirmDialog(
         title: title,
         message: message,

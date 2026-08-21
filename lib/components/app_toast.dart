@@ -84,10 +84,10 @@ class _AnimatedToastBubbleState extends State<_AnimatedToastBubble>
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: color.withOpacity(0.5), width: 1.5),
+              border: Border.all(color: color.withValues(alpha: 0.5), width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(0.12),
+                  color: color.withValues(alpha: 0.12),
                   blurRadius: 14,
                   offset: const Offset(0, 4),
                 ),

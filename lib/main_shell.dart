@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/screen1_default/default_timetable_screen.dart';
 import 'screens/screen2_schedules/all_schedules_screen.dart';
+import 'screens/screen4_ocr/ocr_import_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -17,6 +18,7 @@ class _MainShellState extends State<MainShell> {
       onGoToSchedules: () => setState(() => _currentIndex = 1),
     ),
     const AllSchedulesScreen(),
+    const OcrImportScreen(),
   ];
 
   void _onTabTapped(int index) {
@@ -73,6 +75,16 @@ class _CustomBottomNavBar extends StatelessWidget {
                   activeIcon: Icons.calendar_today,
                   inactiveIcon: Icons.calendar_today,
                   onTap: () => onTap(1),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: _NavItem(
+                  isActive: currentIndex == 2,
+                  activeIcon: Icons.camera_alt,
+                  inactiveIcon: Icons.camera_alt_outlined,
+                  onTap: () => onTap(2),
                 ),
               ),
             ),

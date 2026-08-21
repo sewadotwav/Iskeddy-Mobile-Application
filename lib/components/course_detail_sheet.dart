@@ -427,9 +427,9 @@ class _CourseDetailSheetState extends State<CourseDetailSheet> {
   Widget _statusPill(TrackerStatus s) {
     switch (s) {
       case TrackerStatus.dropped:
-        return AppPill(label: 'Dropped', fillColor: getSaturatedCourseColor(_course).withOpacity(0.15));
+        return AppPill(label: 'Dropped', fillColor: getSaturatedCourseColor(_course).withValues(alpha: 0.15));
       case TrackerStatus.atRisk:
-        return AppPill(label: 'At Risk', fillColor: getCourseColor(_course).withOpacity(0.15));
+        return AppPill(label: 'At Risk', fillColor: getCourseColor(_course).withValues(alpha: 0.15));
       case TrackerStatus.safe:
         return const AppPill(label: 'Safe', fillColor: Color(0xFFF2F2F2));
       case TrackerStatus.notSetUp:

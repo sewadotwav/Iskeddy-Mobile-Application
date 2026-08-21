@@ -45,9 +45,9 @@ class AbsenceTrackerSheet extends StatelessWidget {
       case TrackerStatus.safe:
         return const AppPill(label: 'Safe', fillColor: Color(0xFFF2F2F2));
       case TrackerStatus.atRisk:
-        return AppPill(label: 'At Risk', fillColor: getCourseColor(course).withOpacity(0.15));
+        return AppPill(label: 'At Risk', fillColor: getCourseColor(course).withValues(alpha: 0.15));
       case TrackerStatus.dropped:
-        return AppPill(label: 'Dropped', fillColor: getSaturatedCourseColor(course).withOpacity(0.15));
+        return AppPill(label: 'Dropped', fillColor: getSaturatedCourseColor(course).withValues(alpha: 0.15));
     }
   }
 

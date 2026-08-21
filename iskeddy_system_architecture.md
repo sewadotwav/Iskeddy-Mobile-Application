@@ -11,8 +11,7 @@
 Iskeddy is a manual class schedule maker for students. Students create and manage
 multiple schedules, add and edit course entries within each schedule, and view their
 courses through a clean card-based list grouped by day. One schedule can be pinned as
-the default, which is shown on the app's home tab filtered to the current day only. A
-later phase adds AI-powered OCR to auto-plot a schedule from an uploaded image.
+the default, which is shown on the app's home tab filtered to the current day only.
 
 ---
 
@@ -42,17 +41,27 @@ lib/
 │   │       └── schedule_card.dart
 │   └── screen3_detail/
 │       └── schedule_detail_screen.dart         # Pushed screen — full schedule view
-├── widgets/
-│   ├── course_editor_sheet.dart      # Shared add/edit popup
-│   ├── confirm_dialog.dart           # Reusable confirmation dialogue
-│   ├── name_schedule_dialog.dart     # Naming prompt shown when creating a schedule
+├── components/                       # Shared, reusable widget library — flat
+│   ├── app_header.dart               # Logo-only centered header
+│   ├── app_pill.dart                 # Generic pill/badge
+│   ├── app_text_styles.dart          # Centralized text style helper (appFont)
+│   ├── app_toast.dart                # Toast wrapper
+│   ├── circular_icon_button.dart     # Small circular tap target
 │   ├── color_picker_grid.dart        # 10-color fixed picker (2 rows of 5)
+│   ├── confirm_dialog.dart           # Reusable confirmation dialogue
 │   ├── course_card.dart              # Single course list item (shared)
-│   ├── app_pill.dart                 # Generic pill/badge (counts, status, tags)
-│   ├── app_toast.dart                # Toast wrapper around fluttertoast
-│   └── circular_icon_button.dart     # Reusable small circular icon button
+│   ├── course_detail_sheet.dart      # Course info + notes bottom sheet
+│   ├── course_editor_sheet.dart      # Shared add/edit course popup
+│   ├── empty_state.dart              # Generic empty-state widget
+│   ├── name_schedule_dialog.dart     # Schedule naming/rename dialog
+│   ├── pill_button.dart              # Full-width pill action button
+│   ├── schedule_card.dart            # Schedule list item
+│   ├── absence_tracker_sheet.dart    # Sub-stats + course list for absence tracking
+│   └── course_tracker_sheet.dart     # Per-course absence/late tracker
 └── utils/
-    └── time_utils.dart               # Time parsing, gap/break + stats calculation
+    ├── time_utils.dart               # Time parsing, gap/break + stats calculation
+    ├── course_list_builder.dart      # GroupedCourseList + TodayCourseList widgets
+    └── tracker_utils.dart            # Absence/late computation logic
 ```
 
 ---
@@ -69,9 +78,8 @@ class MeetingTime {
 }
 ```
 
-Every course, regardless of its class mode, uses `meetingTimes` to define when it
-happens. Asynchronous courses are not exempt — students still block out a day/time
-range for self-paced work, so the same field structure applies to all three class modes.
+Every course regardless of class mode uses meetingTimes to define when it happens.
+Asynchronous courses are not exempt — students still block out day/time ranges.
 
 ### 3.2 Course
 
@@ -84,7 +92,11 @@ class Course {
   String? courseType;               // "Lecture" | "Lab" | "Seminar" | "Workshop" | null
   String? instructor;
   String? roomNo;
+  String? notes;                    // Optional short note per course
   List<MeetingTime> meetingTimes;
+  int? maxAbsences;                 // null = tracker not yet set up
+  int absenceCount;                 // raw logged absences, default 0
+  int lateCount;                    // raw logged lates, default 0
   DateTime createdAt;
   DateTime updatedAt;
 }
@@ -116,12 +128,15 @@ devices
                   └── courses
                         └── {courseId}
                               ├── id, title, colorHex, classMode, courseType
-                              ├── instructor, roomNo, createdAt, updatedAt
+                              ├── instructor, roomNo, notes
+                              ├── maxAbsences (int | null)
+                              ├── absenceCount (int, default 0)
+                              ├── lateCount (int, default 0)
+                              ├── createdAt, updatedAt
                               └── meetingTimes : Array<Map{days, startTime, endTime}>
 ```
 
-Identity is a UUID generated on first app launch and stored in SharedPreferences — no
-authentication, no login. The UUID is the Firestore document ID under `devices/`.
+Identity is a UUID generated on first app launch stored in SharedPreferences.
 
 ---
 
@@ -195,8 +210,7 @@ service cloud.firestore {
           && isOptionalString(data, 'instructor')
           && isOptionalString(data, 'roomNo')
           && isOptionalString(data, 'courseType')
-          && isTimestamp(data, 'createdAt')
-          && isTimestamp(data, 'updatedAt');
+          && isOptionalString(data, 'notes');
     }
 
     match /devices/{deviceId} {
@@ -237,446 +251,576 @@ Shown as 2 rows of 5 circular swatches in the Course Editor.
 
 | # | Name | Hex |
 |---|---|---|
-| 1 | Lavender | `#CDC5FA` |
-| 2 | Mint / Seafoam | `#BDDBD9` |
-| 3 | Sky Blue | `#C4E6FF` |
-| 4 | Khaki / Olive Light | `#E4E0B6` |
-| 5 | Orchid Pink | `#F9CFFF` |
-| 6 | Pale Yellow | `#FDF6A8` |
-| 7 | Peach | `#FFE8C4` |
-| 8 | Rosy Tan | `#E4BEAB` |
-| 9 | Pink | `#FDBDD2` |
-| 10 | Light Green | `#BEE89D` |
-
-A course's selected color fills its card background throughout the app (Screen 1,
-Screen 3, and anywhere else a course appears).
+| 1 | Lavender | #CDC5FA |
+| 2 | Mint / Seafoam | #BDDBD9 |
+| 3 | Sky Blue | #C4E6FF |
+| 4 | Khaki / Olive Light | #E4E0B6 |
+| 5 | Orchid Pink | #F9CFFF |
+| 6 | Pale Yellow | #FDF6A8 |
+| 7 | Peach | #FFE8C4 |
+| 8 | Rosy Tan | #E4BEAB |
+| 9 | Pink | #FDBDD2 |
+| 10 | Light Green | #BEE89D |
 
 ### 6.2 Primary Accent Color
 
-| Name | Hex | Usage |
-|---|---|---|
-| Ink Black | `#040505` | All primary buttons, active bottom-nav state, bold headers, selected-state rings/borders, primary icons |
+Ink Black #040505 — all primary buttons, active bottom-nav state, bold headers,
+selected-state rings/borders, primary icons.
 
-- **Background:** White (`#FFFFFF`) everywhere — screens, cards, sheets, dialogs, toasts.
-- **Secondary text:** Neutral mid-gray for subtitles, helper text, placeholders, and
-  inactive pill text.
+Background: White #FFFFFF everywhere.
+Secondary text: Neutral mid-gray.
 
-### 6.3 Class Mode Options (Dropdown)
+### 6.3 Class Mode Options
 
 | Display Label | Firestore Value |
 |---|---|
-| Onsite | `onsite` |
-| Synchronous | `synchronous` |
-| Asynchronous | `asynchronous` |
+| Onsite | onsite |
+| Synchronous | synchronous |
+| Asynchronous | asynchronous |
 
-Selecting any class mode keeps the Days / Start Time / End Time fields visible in the
-Course Editor — class mode never hides or changes which fields are required.
+### 6.4 Course Type Options (nullable)
 
-### 6.4 Course Type Options (Dropdown, nullable)
-
-- Lecture
-- Lab
-- Seminar
-- Workshop
+Lecture / Lab / Seminar / Workshop
 
 ---
 
 ## 7. REUSABLE COMPONENT LIBRARY
 
-These are built once and shared across every screen rather than rebuilt per-screen.
-Building them early (Phase 2–4) pays off across the rest of the app.
+All shared widgets live under lib/components/ (flat, no subfolders).
 
-| Component | File | Used In | Notes |
-|---|---|---|---|
-| `ConfirmDialog` | `widgets/confirm_dialog.dart` | Delete schedule, bulk delete, delete course | Takes title, message, confirm label, and an `onConfirm` callback. White card, pill buttons. |
-| `NameScheduleDialog` | `widgets/name_schedule_dialog.dart` | Screen 2 FAB, schedule rename | Single text field + Cancel/Create (or Save) buttons. Reused for both creating and renaming, just with different titles/labels. |
-| `CourseEditorSheet` | `widgets/course_editor_sheet.dart` | Screen 3 (add + edit course) | One widget, two modes driven by whether a `Course?` is passed in. |
-| `ColorPickerGrid` | `widgets/color_picker_grid.dart` | Course Editor | 10 swatches, 2 rows of 5, selection ring + checkmark. |
-| `CourseCard` | `widgets/course_card.dart` | Screen 1, Screen 3 | Solid color fill from `colorHex`, pencil icon, title, time row, room row. |
-| `ScheduleCard` | `screens/screen2_schedules/widgets/schedule_card.dart` | Screen 2 | Handles both normal mode (trash icon) and multi-select mode (checkbox circle) via a prop. |
-| `AppPill` | `widgets/app_pill.dart` | Course count badges, schedule count badge, "Active Schedule" status, day toggles, class-mode tags | One generic pill widget — fill color, text, optional icon, optional selected state — parameterized rather than rebuilt per use case. |
-| `CircularIconButton` | `widgets/circular_icon_button.dart` | Pin icon, pencil icon, FABs, close (X) button, trash icon | Generic small circular tap target — fill color, icon, size, onTap. |
-| `AppToast` | `widgets/app_toast.dart` | Every toast trigger in Section 13 | Thin wrapper around `fluttertoast` so styling/positioning stays consistent everywhere instead of repeating config at every call site. |
-| `BreakDivider` | inline in `course_card.dart` or its own small widget | Screen 1, Screen 3 lists | Small centered gray pill reading "Break", inserted by the list-building logic in `time_utils.dart`. |
-| `EmptyState` | could live in `widgets/empty_state.dart` | Screen 1 (no pinned / no classes today), Screen 2 (no schedules), Screen 3 (no courses) | One generic widget — icon, title, optional subtitle, optional button — instead of four separate hand-built empty screens. |
+| Component | File | Used In |
+|---|---|---|
+| AppHeader | app_header.dart | Screen 1, Screen 2 |
+| AppPill | app_pill.dart | Badges, status tags, day toggles |
+| AppTextStyles (appFont) | app_text_styles.dart | Every screen and component |
+| AppToast | app_toast.dart | Every toast trigger |
+| CircularIconButton | circular_icon_button.dart | Pin, pencil, FAB, close, trash |
+| ColorPickerGrid | color_picker_grid.dart | Course Editor |
+| ConfirmDialog | confirm_dialog.dart | All delete actions |
+| CourseCard | course_card.dart | Screen 1, Screen 3 |
+| CourseDetailSheet | course_detail_sheet.dart | Tapping a course card |
+| CourseEditorSheet | course_editor_sheet.dart | Screen 3 add/edit |
+| EmptyState | empty_state.dart | All empty screens |
+| NameScheduleDialog | name_schedule_dialog.dart | Create/rename schedule |
+| PillButton | pill_button.dart | All primary action buttons |
+| ScheduleCard | schedule_card.dart | Screen 2 |
+| AbsenceTrackerSheet | absence_tracker_sheet.dart | Absence tracker entry |
+| CourseTrackerSheet | course_tracker_sheet.dart | Per-course tracker |
 
 ---
 
 ## 8. NAVIGATION MODEL
 
-- **Screen 1** and **Screen 2** are root tabs under a persistent bottom navigation bar
-  (`IndexedStack`).
-- **Screen 3** is reached only by tapping a schedule card on Screen 2. It is pushed via
-  `Navigator.push`, hides the bottom navigation bar, and shows a back arrow instead.
+Screen 1 and Screen 2 are root tabs (IndexedStack, bottom nav visible).
+Screen 3 is pushed via Navigator.push (bottom nav hidden, back arrow shown).
 
-### Bottom Navigation Bar (Screens 1 & 2 only)
-
-| Position | Icon | Tab |
-|---|---|---|
-| Left | Document/list icon | All Schedules (Screen 2) |
-| Right | Pin icon | Default Timetable (Screen 1) |
-
-Active tab: black (`#040505`) filled circle behind the icon, white icon. Inactive tab:
-plain gray icon, no fill.
+Bottom nav — Screens 1 & 2 only:
+  Left: document/list icon → All Schedules (Screen 2)
+  Right: pin icon → Default Timetable (Screen 1)
+Active: #040505 filled circle, white icon. Inactive: plain gray icon.
 
 ---
 
 ## 9. SCREEN 1 — DEFAULT TIMETABLE (root tab, read-only)
 
-Shows the pinned schedule's courses for **today's actual date only** — there is no day
-browser or tab selector on this screen.
+Shows the pinned schedule's courses for today's actual date only.
 
-**Layout, top to bottom:**
-1. Small calendar icon + "iskeddy" wordmark, centered
-2. Pinned schedule's name, bold, large
-3. A flat list of `CourseCard` widgets for every course whose `meetingTimes.days`
-   includes today's weekday, sorted by `startTime` ascending. Asynchronous courses are
-   included in this list exactly like any other course, since they carry real day/time
-   data.
-4. A `BreakDivider` is inserted between two consecutive cards whenever the gap between
-   them is 30 minutes or more.
-5. Read-only — tapping a course card does nothing.
+Layout:
+1. AppHeader
+2. Pinned schedule name, bold large
+3. Flat list of CourseCard widgets for today's weekday, sorted by startTime
+4. BreakDivider between consecutive courses where gap >= 30 minutes
+5. Read-only — tapping a course card opens CourseDetailSheet (view + notes only)
 
-**Empty state — no pinned schedule:**
-- `EmptyState`: pin icon, "No default schedule set.", "Pin one from your schedules.",
-  button "Go to Schedules" → switches the active bottom tab to Screen 2
-
-**Empty state — pinned schedule has no classes today:**
-- `EmptyState` with no button: "No classes scheduled for today."
+Empty states:
+  No pinned schedule: EmptyState with "Go to Schedules" button
+  No classes today: EmptyState text only, no button
 
 ---
 
 ## 10. SCREEN 2 — ALL SCHEDULES (root tab)
 
-### Normal Mode
+Normal mode:
+1. AppHeader
+2. "Your Schedules" + AppPill "[N] SCHEDULES"
+3. ScheduleCard list: name, course count pill, pin glyph, trash icon
+4. Long press enters multi-select mode
+5. FAB opens NameScheduleDialog
 
-1. Small calendar icon + "iskeddy" wordmark, centered
-2. "Your Schedules" bold large text + `AppPill` showing "[N] SCHEDULES"
-3. Vertical list of `ScheduleCard` widgets:
-   - Left: small rounded-square badge with a calendar icon, pastel fill
-   - Schedule name, bold black — a small pin glyph appears beside the name if
-     `isPinned == true`
-   - `AppPill` showing "[N] COURSES" beneath the name
-   - Right side: a single trash icon button — opens `ConfirmDialog`, then deletes on
-     confirm and shows a toast. No swipe gestures anywhere.
-4. Long-pressing any card enters multi-select mode.
-5. Bottom-right FAB: black filled circle with a plus icon → opens `NameScheduleDialog`
-   (Section 12).
-6. Empty state (zero schedules): `EmptyState` — "No schedules yet. Tap + to create one."
-
-### Multi-Select Mode
-
-- Header is replaced with: back/cancel arrow (left) → "[N] selected" (center) → trash
-  icon (right, opens the bulk `ConfirmDialog`)
-- Each `ScheduleCard`'s trash icon is replaced by a selection circle: hollow gray
-  outline when unselected, black filled with a white checkmark when selected
-- Selected cards get a black border added around the card
-- The bottom navigation bar stays visible
-- Tapping the back arrow, or the system back gesture, exits multi-select mode
+Multi-select mode:
+  Header replaced with: back arrow / "[N] selected" / trash icon
+  Checkboxes on cards, black border on selected
+  Bottom nav stays visible
+  System back exits multi-select
 
 ---
 
 ## 11. SCREEN 3 — SCHEDULE DETAIL (pushed screen, editable)
 
-Reached by tapping any schedule card on Screen 2.
+Layout:
+1. Back arrow
+2. Schedule name + pin icon + pencil icon
+3. Subtitle: "Active Schedule · N Courses" or "N Courses"
+4. Two stat cards (TOTAL HOURS / CLASS DAYS) — hidden if no courses
+5. ABSENCE TRACKER widget — hidden if no courses (see Section 11.1)
+6. Day filter tabs (M T W T F S S) — filters the course list below
+7. Filtered course list grouped by selected day, sorted by startTime
+8. BreakDivider for gaps >= 30 minutes
+9. Tapping a course card opens CourseDetailSheet
+10. FAB opens CourseEditorSheet (Add mode)
 
-**Layout, top to bottom:**
-1. Back arrow (top-left) → returns to Screen 2. The bottom navigation bar is hidden.
-2. Schedule name, bold, large — followed immediately by two `CircularIconButton`s:
-   - **Pin icon** — toggles `isPinned`. If another schedule is currently pinned, it is
-     unpinned first. Shows a toast either way.
-   - **Pencil icon** — opens `NameScheduleDialog` in rename mode (text field prefilled
-     with the current name) → calls `updateScheduleName` → shows a toast.
-3. Subtitle line: "Active Schedule · [N] Courses" if `isPinned == true`, otherwise just
-   "[N] Courses".
-4. Two stat cards side by side — **only shown once the schedule has at least one
-   course; hidden entirely on an empty schedule**:
-   - "TOTAL HOURS" — sum of all course durations across the week, displayed as
-     "X hrs / wk"
-   - "CLASS DAYS" — count of distinct weekdays that have at least one course,
-     displayed as "X Days"
-5. A vertical list grouped by weekday section headers (MONDAY, TUESDAY, … SUNDAY).
-   Days with zero courses are skipped entirely — only days with at least one course get
-   a header. Within each day's section, courses are sorted by `startTime` ascending,
-   with a `BreakDivider` inserted wherever the gap between two consecutive courses is
-   30 minutes or more. A course that meets on multiple days (e.g. Mon/Wed) appears as a
-   separate `CourseCard` under each of those day sections.
-6. Tapping a course card opens `CourseEditorSheet` in Edit mode, prefilled.
-7. Bottom-right FAB: black filled circle with a plus icon → opens `CourseEditorSheet`
-   in Add mode. This is the only way to add a course from this screen.
+Empty state: EmptyState "No courses yet. Tap + to add your first course."
+No delete-schedule action here — only available from Screen 2.
 
-There is no delete-schedule action on this screen — deleting a schedule is only
-available from Screen 2.
+### 11.1 Absence Tracker Widget (inline on Screen 3)
 
-**Empty state — schedule has zero courses:**
-- Stat cards are hidden
-- `EmptyState`: "No courses yet.", "Tap + to add your first course."
+A single full-width tappable card placed below the stat cards when courses exist.
+Same visual style as the TOTAL HOURS / CLASS DAYS stat cards.
+
+Displays:
+  Label: "ABSENCE TRACKER"
+  Sub-stat 1: "DROP RISK" / "N Courses" (amber color if N > 0)
+  Sub-stat 2: "TOTAL ABSENCES" / "N"
+  Right: chevron icon
+
+Tapping opens AbsenceTrackerSheet.
 
 ---
 
 ## 12. NEW SCHEDULE CREATION FLOW
 
-1. Student taps the FAB on Screen 2.
-2. `NameScheduleDialog` appears: a text field (placeholder e.g. "e.g. Fall Semester
-   2024") with Cancel / Create buttons. The title cannot be empty to proceed.
-3. On Create: calls `createSchedule(deviceId, name)`, then navigates to Screen 3 for the
-   new schedule — which opens directly into its empty state.
-4. The student manually taps the FAB on Screen 3 to begin adding courses one at a time.
-   Nothing is auto-opened for them.
+1. Tap FAB on Screen 2
+2. NameScheduleDialog appears (cannot be empty)
+3. On Create: createSchedule() → navigate to empty Screen 3
+4. Student manually taps FAB on Screen 3 to add courses
 
 ---
 
-## 13. TOASTS & CONFIRMATIONS
+## 13. ABSENCE & LATE TRACKER
 
-### Toasts (via `AppToast`, auto-dismiss, non-blocking)
+### Rules
+- Each course has its own independent tracker
+- Student sets maxAbsences per course (professor's allowed limit)
+- 3 lates = 1 effective absence (fixed global rule, not configurable per course)
+- effectiveAbsences = absenceCount + floor(lateCount / 3)
+- remaining = maxAbsences - effectiveAbsences
+- Status thresholds:
+    SAFE: remaining > 3
+    AT RISK: remaining <= 3 and remaining > 0
+    DROPPED: effectiveAbsences >= maxAbsences
+    NOT SET UP: maxAbsences is null
 
-| Trigger | Message |
-|---|---|
-| Schedule created | "Schedule created" |
-| Schedule renamed | "Schedule renamed" |
-| Schedule pinned | "Set as default timetable" |
-| Schedule unpinned | "Default timetable removed" |
-| Course added | "[Course Title] added" |
-| Course saved (edit) | "Changes saved" |
-| Single schedule deleted | "Schedule deleted" |
-| Bulk schedules deleted | "[N] schedules deleted" |
-| Course deleted | "[Course Title] removed" |
+### tracker_utils.dart
 
-### Confirmation Dialogues (via `ConfirmDialog`)
+Pure Dart file, no Flutter imports. Exposes:
+  enum TrackerStatus { notSetUp, safe, atRisk, dropped }
+  class TrackerState { effectiveAbsences, remaining, latesConverted, status }
+  TrackerState computeTrackerState(Course course)
+  int dropRiskCount(List<Course> courses)
+  int totalEffectiveAbsences(List<Course> courses)
 
-| Trigger | Title | Message |
-|---|---|---|
-| Delete single schedule | "Delete this schedule?" | "This cannot be undone. All courses within this schedule will be permanently removed." |
-| Bulk delete | "Delete [N] schedules?" | "This cannot be undone. All courses within these schedules will be permanently removed." |
-| Delete course | "Remove [Course Title]?" | "This cannot be undone." |
+### AbsenceTrackerSheet
 
-**Dialog style:** white rounded card, bold black title, gray subtext, two pill buttons
-side-by-side — "Cancel" (light gray fill, black text) and "Delete" (solid black fill,
-white text).
+Bottom sheet opened by tapping the Absence Tracker widget on Screen 3.
+Uses getCoursesStream() for live updates.
 
----
+Layout:
+  Header: "Absence Tracker" + close button
+  Two sub-stat cards: DROP RISK / TOTAL ABSENCES
+  Scrollable list of course cards in their own colors with status pills
+  Tapping a course card closes this sheet and opens CourseTrackerSheet
 
-## 14. COURSE CARD (shared widget — Screens 1 & 3)
+### CourseTrackerSheet
 
-- Card background is filled with the course's own `colorHex` (a solid pastel fill, not
-  just a border)
-- Rounded corners (~20px)
-- Top-right corner: a small pencil/edit icon — tapping it opens `CourseEditorSheet` in
-  Edit mode for that course
-- Course title: bold black, wraps to 2 lines if needed
-- Time row: small clock icon + start–end time range
-- Room row: small location-pin icon + room text (omitted if `roomNo` is null)
-- A small class-mode `AppPill` (e.g. "Asynchronous") may appear on the card so students
-  can distinguish self-paced blocks from live classes at a glance
+Per-course bottom sheet. Has four states:
 
----
+NOT SET UP:
+  Number selector for maxAbsences (min 1)
+  Late rule info box
+  "Set Up Tracker" primary button
 
-## 15. COURSE EDITOR (bottom sheet, shared add/edit)
+SAFE / AT RISK / DROPPED (all share same layout):
+  Two stat cards: ABSENCES (N/max) / LATES (N)
+  Full-width status pill
+  Warning banner (AT RISK and DROPPED only)
+  LOG ABSENCE row: count display + minus/plus circular buttons
+  LOG LATE row: count display + minus/plus circular buttons
+  Info box: late conversion explanation
+  "Done" primary button — writes all three tracker fields to Firestore via
+    updateCourseTracker() then shows "Tracker updated" toast
 
-Opened only from Screen 3 — either via its FAB (Add mode) or by tapping an existing
-course card (Edit mode).
+Minus buttons disabled (opacity 0.3) when count is 0.
+Plus ABSENCE button disabled when status is DROPPED.
 
-**Header:** "Add Course" / "Edit Course" bold black, `CircularIconButton` close (X)
-top-right.
+### CourseDetailSheet (absence section)
 
-**Fields, top to bottom:**
+An ABSENCE STATUS section is rendered between MEETING TIMES and NOTES:
+  If maxAbsences is null: "Absence tracker not set up yet." info box
+  Otherwise: bordered stat card showing effectiveAbsences/maxAbsences + status pill
+    + breakdown info row (raw absences + lates breakdown)
+  This section is fully read-only.
 
-| Field | Type | Notes |
-|---|---|---|
-| Course Title | Text input | Required |
-| Course Color | `ColorPickerGrid` — 10 circular swatches, 2 rows of 5 | Selected swatch shows a black ring + checkmark. Default: first color. |
-| Class Mode | Dropdown | Onsite / Synchronous / Asynchronous |
-| Course Type | Dropdown (nullable, side-by-side with Class Mode) | Lecture / Lab / Seminar / Workshop / None |
-| Days | 7 circular single-letter toggles (M T W T F S S) | Black fill + white letter when selected |
-| Start Time / End Time | Two pill fields side-by-side | Opens native time picker |
-| + Add another meeting time | Text link with plus icon | Adds another Days/Start/End block, each with its own remove icon once more than one exists |
-| Instructor | Text input (side-by-side with Room No.) | Optional |
-| Room No. | Text input | Optional |
+### Firestore Service additions
 
-The Days / Start Time / End Time fields are always visible, regardless of which class
-mode is selected — asynchronous courses still need a day/time block, since students use
-it to schedule their self-paced work.
+  Future<void> updateCourseTracker(
+    String deviceId, String scheduleId, String courseId,
+    { int? maxAbsences, int? absenceCount, int? lateCount }
+  )
+  Uses .update() with only the provided fields — no full course rewrite.
 
-**Bottom actions:**
-- **"Save Course"** — full-width black pill button, bold white text. Validates the
-  title is non-empty before saving.
-- **"Delete"** — text-only link below Save, shown in Edit mode only. Opens
-  `ConfirmDialog`: "Remove [Course Title]? This cannot be undone."
-
----
-
-## 16. COURSE LIST & GROUPING LOGIC
-
-There is no calendar grid anywhere in the app. All course display is built from two
-list-building functions in `time_utils.dart`:
-
-1. **Today list (Screen 1):** filter all of the pinned schedule's courses to those whose
-   `meetingTimes.days` contains today's weekday, flatten to one card per matching
-   meeting time, sort by `startTime`, insert `BreakDivider`s for gaps ≥ 30 minutes.
-
-2. **Grouped-by-day list (Screen 3):** for each weekday Monday through Sunday, filter
-   the schedule's courses to those whose `meetingTimes.days` contains that weekday.
-   Skip the weekday entirely if no courses match. Within a matching weekday, sort by
-   `startTime` and insert `BreakDivider`s for gaps ≥ 30 minutes, same as above.
-
-3. **Stats calculation (Screen 3):**
-   - `Total Hours` = sum of (`endTime` − `startTime`) across every meeting time in the
-     schedule, displayed per week.
-   - `Class Days` = count of distinct weekdays that have at least one course.
-
-No overlap/conflict-resolution logic is needed, since courses render as sequential
-cards in a vertical list rather than positioned on a grid.
+  Future<void> updateCourseNotes(
+    String deviceId, String scheduleId, String courseId, String notes
+  )
+  Uses .update() on notes and updatedAt only.
 
 ---
 
-## 17. PACKAGES (pubspec.yaml)
+## 14. COURSE DETAIL SHEET
 
-```yaml
-dependencies:
-  flutter:
-    sdk: flutter
-  firebase_core: latest
-  cloud_firestore: latest
-  shared_preferences: latest
-  uuid: latest
-  intl: latest
-  fluttertoast: latest
-  dropdown_button2: latest
+Opened by tapping anywhere on a CourseCard (excluding the pencil icon).
+
+Layout:
+  Drag handle
+  Header: colored circle swatch + course title + close button
+  Class mode + course type AppPills
+  Hrs/wk row (clock icon + computed hours per week for this course)
+  MEETING TIMES section: one colored card per MeetingTime showing day, time range,
+    instructor, room, class mode pill
+  ABSENCE STATUS section (read-only, see Section 13)
+  NOTES section: multiline text field + "Save Note" PillButton
+
+---
+
+## 15. COURSE EDITOR
+
+Opened only from Screen 3 (FAB for add, pencil icon for edit).
+
+Fields in order:
+  Course Title (required)
+  Course Color (ColorPickerGrid, 2 rows of 5, default first color)
+  Class Mode dropdown / Course Type dropdown (side by side)
+  Days (7 circular single-letter M T W T F S S toggles — always visible)
+  Start Time / End Time (pill fields, side by side — always visible)
+  Add another meeting time (text link)
+  Instructor / Room No. (side by side, optional)
+
+Actions:
+  "Save Course" — validates title non-empty and endTime > startTime per row
+  "Delete" — Edit mode only, opens ConfirmDialog
+
+---
+
+## 16. COURSE LIST & GROUPING LOGIC (time_utils.dart + course_list_builder.dart)
+
+No calendar grid anywhere. All display uses vertical card lists.
+
+time_utils.dart functions:
+  timeToMinutes(String time) → int
+  formatTime(String time) → String (12h display)
+  formatTimeRange(String start, String end) → String
+  hasBreakBefore(MeetingTime a, MeetingTime b) → bool (>= 30 min gap)
+  totalWeeklyMinutes(List<Course> courses) → int
+  distinctClassDays(List<Course> courses) → int
+  formatTotalHours(List<Course> courses) → String ("X hrs / wk")
+  formatClassDays(List<Course> courses) → String ("X Days")
+  coursesForDay(List<Course> courses, String day) → List<_DayCourseEntry>
+  activeDays(List<Course> courses) → List<String> (Mon→Sun order)
+  weekdayString(int dartWeekday) → String
+
+course_list_builder.dart widgets:
+  GroupedCourseList({ required courses, scheduleId, deviceId })
+    — used on Screen 3, groups by active days with headers
+  TodayCourseList({ required courses, scheduleId, deviceId })
+    — used on Screen 1, filters to today only, read-only (onEditTap no-op)
+
+BreakDivider is a private widget inside course_list_builder.dart.
+
+---
+
+## 17. TOASTS & CONFIRMATIONS
+
+Toasts:
+  Schedule created / renamed / pinned / unpinned
+  Course added / saved / deleted
+  Schedule deleted / N schedules deleted
+  Tracker updated
+  Note saved
+
+Confirmation dialogues:
+  Delete single schedule / bulk delete / delete course
+  All use ConfirmDialog with Cancel (gray) + Delete (black) PillButtons
+
+---
+
+## 18. PACKAGES (pubspec.yaml)
+
+  firebase_core
+  cloud_firestore
+  shared_preferences
+  uuid
+  intl
+  fluttertoast
+  dropdown_button2
+
+---
+
+## 19. AGENTS.md (project root)
+
+  # Iskeddy — Agent Rules
+  
+  Flutter 3.44 + Dart 3.12 + Firebase Firestore. No auth. No login.
+  Target: Android 12 physical device.
+  
+  Folder: lib/components/ (flat) for all shared widgets.
+  All Firestore ops through firestore_service.dart only.
+  No business logic in UI widgets.
+  Models are plain Dart with .toMap() and .fromMap().
+  
+  Rules:
+  - No swipe-to-delete, always explicit button
+  - All deletes require ConfirmDialog first
+  - All major actions show AppToast after completion
+  - isPinned: true on only one schedule at a time
+  - Course mode never hides Days/Start/End fields
+  - Course cards use colorHex as solid fill
+  - Bottom nav visible on Screen 2 multi-select, hidden on Screen 3
+  - New schedules always created through NameScheduleDialog
+  - Absence tracker: 3 lates = 1 effective absence (fixed, not configurable)
+  - updateCourseTracker() for tracker fields only, never full updateCourse()
+  - updateCourseNotes() for notes field only
+
+---
+
+## 20. BUILD PLAN
+
+### Phase 1 — Foundation (Complete)
+  Batch 1: Project init, Firebase, pub get, flutterfire configure, offline persistence
+  Batch 2: Constants & enums
+  Batch 3: Data models (MeetingTime, Course, Schedule)
+  Batch 4: Device ID service + test
+  Batch 5: Firestore service (all CRUD methods)
+
+### Phase 2 — Navigation Shell (Complete)
+  Batch 6: app.dart, MainShell, bottom nav, placeholder screens
+
+### Phase 3 — Shared Components (Complete)
+  Batch 7: AppHeader, AppPill, AppTextStyles, CircularIconButton, ConfirmDialog,
+    AppToast, PillButton
+  Batch 8: ColorPickerGrid, EmptyState
+
+### Phase 4 — Screen 2: All Schedules (Complete)
+  Batch 9: ScheduleCard widget
+  Batch 10: AllSchedulesScreen (StreamBuilder, multi-select state)
+  Batch 11: NameScheduleDialog + FAB wiring
+  Batch 12: Individual delete + bulk delete wiring
+
+### Phase 5 — Course Editor (Complete)
+  Batch 13: CourseEditorSheet (all fields)
+  Batch 14: Multi-row meeting times (add/remove)
+
+### Phase 6 — Course List & Grouping Logic (Complete)
+  Batch 15: time_utils.dart
+  Batch 16: CourseCard widget
+  Batch 17: GroupedCourseList (Screen 3)
+  Batch 18: TodayCourseList (Screen 1)
+
+### Phase 7 — Screen 3: Schedule Detail (Complete)
+  Batch 19: Screen shell (stat cards, grouped list, FAB, empty state)
+  Batch 20: Pin/rename wiring
+  Batch 21: CourseEditorSheet wiring (add + edit)
+
+### Phase 8 — Screen 1: Default Timetable (Complete)
+  Batch 22: Screen shell (pinned schedule, today filter, empty states)
+
+### Phase 9 — Polish & Edge Cases (Complete)
+  Batch 23: Toast integration audit
+  Batch 24: Edge cases (empty rename, pinned schedule deleted, long titles,
+    time validation, multi-select exit)
+  Batch 25: Final integration test (full flow + offline persistence)
+
+### Phase 9.5 — Post-Launch Feature Additions (Complete)
+  Course Detail Sheet:
+    CourseDetailSheet with meeting times, notes field, Save Note
+    updateCourseNotes() Firestore method
+    notes field added to Course model
+    CourseCard gains onCardTap (opens detail) + retains onEditTap (opens editor)
+
+  Absence & Late Tracker:
+    tracker_utils.dart (pure Dart logic, TrackerStatus, TrackerState)
+    Course model extended: maxAbsences, absenceCount, lateCount
+    updateCourseTracker() Firestore method
+    AbsenceTrackerSheet (sub-stats + course list in one sheet)
+    CourseTrackerSheet (per-course: setup / safe / atRisk / dropped states)
+    AbsenceTrackerWidget (private widget on Schedule Detail screen)
+    CourseDetailSheet updated with read-only ABSENCE STATUS section
+
+### Phase 10 — OCR Import (Active)
+  Batch 26: OCR screen shell + bottom nav third tab
+  Batch 27: Image picker (camera/gallery), preview, process button
+  Batch 28: Gemini Flash multimodal API call, JSON parsing into draft courses
+  Batch 29: Draft review screen — editable course list, manual corrections,
+    confirm and save as new schedule, toast
+
+---
+
+## 21. PHASE 10 — OCR IMPORT DETAIL
+
+### Overview
+
+Students can upload a photo or screenshot of a printed or digital class schedule.
+The image is sent to Gemini Flash (free tier multimodal API) which extracts course
+data and returns it as structured JSON. The student reviews and edits the parsed
+results before saving as a new schedule. Nothing is saved automatically.
+
+### Navigation
+
+A third tab is added to the bottom navigation bar:
+  Left: document/list icon → All Schedules (Screen 2)
+  Center: camera/scan icon → OCR Import (Screen 4, new)
+  Right: pin icon → Default Timetable (Screen 1)
+
+Screen 4 is a root tab, not a pushed screen. Bottom nav remains visible.
+
+### Screen 4 — OCR Import
+
+Layout (empty/initial state):
+  AppHeader
+  Large centered upload area: camera icon, "Upload Schedule Image" primary text,
+    "Supports photos, screenshots, or scanned PDFs" secondary text
+  Two PillButtons stacked:
+    "Take Photo" (primary: black fill)
+    "Choose from Gallery" (secondary: light gray fill)
+
+After image selected:
+  Image preview (constrained height, rounded corners, full width)
+  "Process Image" PillButton (primary: black fill)
+  "Choose Different Image" text link below
+
+While processing (Gemini API call in progress):
+  CircularProgressIndicator centered
+  "Reading your schedule..." subtext
+
+On parse error:
+  AppToast: "Could not read schedule. Try a clearer image."
+  Returns to the upload state
+
+On parse success:
+  Navigates to Draft Review Screen (pushed, bottom nav hidden)
+
+### Gemini Flash API Call
+
+Uses the existing flutter http package (already available transitively) or adds
+the google_generative_ai package (the only new package for this phase).
+
+Required package addition to pubspec.yaml:
+  google_generative_ai: latest
+
+Image is converted to base64 and sent as a multimodal message with this prompt:
+
+  "Extract all course/subject schedule information from this image.
+  Return ONLY a JSON array. No explanation, no markdown, no extra text.
+  Each object must have these exact keys:
+    title (string, required),
+    days (array of strings using: Mon Tue Wed Thu Fri Sat Sun),
+    startTime (string, 24h HH:mm format),
+    endTime (string, 24h HH:mm format),
+    instructor (string or null),
+    roomNo (string or null),
+    courseType (one of: Lecture Lab Seminar Workshop, or null)
+  If a course meets at multiple different times, include it as
+  multiple separate objects with the same title."
+
+Gemini model: gemini-1.5-flash (free tier).
+API key stored in a .env file and loaded via --dart-define-from-file=.env.
+Never hardcoded. Never committed to git.
+
+Response parsing:
+  Strip any markdown code fences if present before JSON.parse.
+  Map each parsed object to a DraftCourse (local model, not stored to Firestore).
+  On any parse failure: show AppToast error, return to upload state.
+
+### DraftCourse (local model, no Firestore)
+
+```dart
+class DraftCourse {
+  String title;
+  String colorHex;           // auto-assigned from courseColors in round-robin order
+  List<MeetingTime> meetingTimes;
+  String? instructor;
+  String? roomNo;
+  String? courseType;
+  bool isIncluded;           // student can exclude a parsed course before saving
+}
 ```
 
----
+This model exists only during the draft review session. It is never written to
+Firestore until the student confirms.
 
-## 18. AGENTS.md (place in project root)
+### Draft Review Screen (pushed from Screen 4)
 
-```markdown
-# Iskeddy — Agent Rules
+Layout:
+  Back arrow (returns to Screen 4, discards draft entirely)
+  "Review Schedule" bold header
+  Subtext: "N courses detected. Edit or remove any before saving."
+  Scrollable list of DraftCourseCard widgets (one per parsed course)
+  Bottom: NameScheduleDialog trigger + "Save as New Schedule" PillButton
 
-## Project
-Flutter 3.44 + Dart 3.12 + Firebase Firestore app.
-Single-module. No auth. No login. No accounts.
-Target: Android 12 physical device.
+DraftCourseCard widget (new, local to this screen):
+  Course color fill (auto-assigned, tappable to change via ColorPickerGrid)
+  Course title (editable inline TextFormField)
+  Days chips (tappable to toggle, same circular M T W T F S S style)
+  Start/End time (tappable pill fields, open native time picker)
+  Instructor / Room No. (editable inline fields, optional)
+  Course Type (dropdown, nullable)
+  Toggle to exclude/include (right side: checkbox or eye icon)
+    Excluded cards render with reduced opacity (0.4) and a strikethrough on title
 
-## UI Model
-- There is no calendar grid anywhere in this app.
-- Screen 1 shows a flat list of today's courses only (pinned schedule, read-only).
-- Screen 3 shows a full list grouped under weekday section headers, skipping empty days.
-- Screen 1 and Screen 2 are root tabs (bottom nav visible, IndexedStack).
-- Screen 3 is a pushed screen (Navigator.push) — bottom nav hidden, back arrow shown.
+On "Save as New Schedule":
+  1. Open NameScheduleDialog (same component, reused)
+  2. On name confirmed: createSchedule(deviceId, name)
+  3. For each DraftCourse where isIncluded == true:
+       Build a full Course object (new UUID, current DateTime, colorHex, all fields)
+       Call addCourse(deviceId, newScheduleId, course)
+  4. AppToast: "Schedule imported"
+  5. Navigate to Screen 3 (the new schedule's detail view) and clear Screen 4's state
 
-## Architecture
-- lib/ structure defined in ISKEDDY_SYSTEM_ARCHITECTURE.md
-- All Firestore ops go through lib/services/firestore_service.dart only
-- No business logic in UI widgets
-- Models are plain Dart classes with .toMap() and .fromMap() methods
-- Reuse the shared component library (Section 7) — do not hand-build a one-off pill,
-  dialog, or card when a shared widget already covers it
+On back arrow from Draft Review:
+  ConfirmDialog: "Discard this draft? The detected courses will not be saved."
+  On confirm: pop back to Screen 4, reset to upload state
 
-## Constants
-- Course colors: 10 fixed hex values only (see app_colors.dart)
-- Primary accent/text color: #040505
-- Class modes: onsite (label "Onsite"), synchronous, asynchronous
-- Course types: Lecture, Lab, Seminar, Workshop (all nullable)
+### Batch Detail
 
-## Rules
-- Never use swipe-to-delete anywhere — always an explicit icon/button
-- All delete actions require a confirmation dialogue first
-- All major user actions show a toast after completion
-- isPinned: true must only exist on one schedule at a time — unpin others before pinning new
-- Class mode never hides any Course Editor fields — Days/Start/End stay visible for all three modes
-- Course Editor is a shared widget used for both add and edit modes
-- Course cards use the course's own colorHex as a solid background fill
-- Bottom nav stays visible during Screen 2 multi-select mode — do not hide it
-- Bottom nav is hidden on Screen 3 — it is a pushed screen with a back arrow
-- New schedules are created through a naming dialog, never with a default placeholder name
-```
+Batch 26 — OCR screen shell:
+  Add third tab to MainShell bottom nav (camera icon, center position)
+  Create lib/screens/screen4_ocr/ocr_import_screen.dart
+  Build upload state UI: image area, Take Photo / Choose from Gallery buttons
+  Wire image_picker: camera and gallery sources
 
----
+Batch 27 — Image picker + preview:
+  After image selected: show preview + Process Image button
+  Add google_generative_ai to pubspec.yaml
+  Add GEMINI_API_KEY to .env file (documented, not committed)
+  Implement base64 image conversion
 
-## 19. BUILD PLAN
+Batch 28 — Gemini API call + JSON parsing:
+  Implement _processImage() async method
+  Build API call with the exact prompt from Section 21
+  Parse response into List<DraftCourse>
+  Handle errors with AppToast + return to upload state
+  Auto-assign colors to DraftCourses in round-robin from courseColors list
 
-### Phase 1 — Foundation
-| Batch | Task | Status |
-|---|---|---|
-| 1 | Project init, Firebase, pub get, flutterfire configure, offline persistence | Complete |
-| 2 | Constants & enums | Complete (final code in Section 20) |
-| 3 | Data models (MeetingTime, Course, Schedule) | Complete |
-| 4 | Device ID service + test | Complete |
-| 5 | Firestore service (all CRUD methods) | Complete |
+Batch 29 — Draft review screen:
+  Create lib/screens/screen4_ocr/draft_review_screen.dart
+  Build DraftCourseCard widget (editable inline fields, day toggles, exclude toggle)
+  Wire NameScheduleDialog + save flow
+  Wire back arrow ConfirmDialog
+  Final integration test: photo → parse → review → edit → save → verify in Firestore
 
-### Phase 2 — Navigation Shell 
-**Batch 6** — App shell & bottom navigation
-1. Create `lib/app.dart` with `MaterialApp`, named routes for Screen 1, Screen 2, Screen 3 | Complete |
-2. Build the 2-tab bottom navigation bar with `IndexedStack` wrapping Screen 1 and Screen 2 | Complete | 
-3. Screen 3 registered as a pushed route, not a tab | Complete |
-4. Placeholder screens for all three, confirm navigation works on device | Complete |
-
-### Phase 3 — Shared Components
-**Batch 7** — `AppPill`, `CircularIconButton`, `ConfirmDialog`, `AppToast` — build these | Complete |
-generic widgets first since every later screen depends on them
-
-**Batch 8** — `ColorPickerGrid` (10 swatches, 2 rows of 5) and `EmptyState` | Complete |
-
-### Phase 4 — Screen 2 (All Schedules)
-**Batch 9** — `ScheduleCard` widget: badge icon, name, course count pill, pin glyph,
-trash icon (normal mode) / selection circle (multi-select mode)
-
-**Batch 10** — All Schedules screen: StreamBuilder, normal/multi-select state toggling,
-header swap, empty state
-
-**Batch 11** — `NameScheduleDialog` + FAB wiring: opens dialog → `createSchedule` →
-navigate to empty Screen 3
-
-**Batch 12** — Individual delete + bulk delete wiring using `ConfirmDialog`
-
-### Phase 5 — Course Editor
-**Batch 13** — `CourseEditorSheet`: all fields in the order specified in Section 15,
-Days/Start/End always visible regardless of class mode
-
-**Batch 14** — Meeting times subsection: add/remove multiple meeting-time blocks
-
-### Phase 6 — Course List & Grouping Logic
-**Batch 15** — `time_utils.dart`: time parsing, gap/break detection (≥30 min), total
-weekly hours calculation, distinct class-days calculation
-
-**Batch 16** — `CourseCard` widget: solid color fill, pencil icon, title, time row,
-room row, class-mode pill
-
-**Batch 17** — Grouped-by-day list builder for Screen 3 (skips empty weekdays)
-
-**Batch 18** — Today-filtered list builder for Screen 1
-
-### Phase 7 — Screen 3 (Schedule Detail)
-**Batch 19** — Screen shell: back arrow, name + pin + pencil icons, subtitle, stat
-cards (hidden if empty), grouped list, FAB, empty state
-
-**Batch 20** — Pin/rename wiring: pin icon toggles `isPinned` + toast; pencil icon opens
-`NameScheduleDialog` in rename mode + toast
-
-**Batch 21** — Course tap → `CourseEditorSheet` (Edit mode); FAB → `CourseEditorSheet`
-(Add mode)
-
-### Phase 8 — Screen 1 (Default Timetable)
-**Batch 22** — Screen shell: fetch pinned schedule, render today-filtered list, both
-empty states (no pinned schedule / no classes today)
-
-### Phase 9 — Polish & Edge Cases
-**Batch 23** — Toast integration audit across every action in Section 13
-
-**Batch 24** — Edge cases: empty rename defaults to "Untitled Schedule", pinned schedule
-deleted while viewing Screen 1, long course titles, end time ≤ start time validation,
-multi-select exit behavior
-
-**Batch 25** — Final integration test on physical device: full create → add courses →
-pin → edit → delete flow, confirm Firestore offline + online persistence
-
-### Phase 10 — OCR Import (post-launch)
-**Batch 26** — OCR screen shell + bottom nav third tab
-
-**Batch 27** — Image picker integration (camera/gallery, preview)
-
-**Batch 28** — Gemini Flash multimodal call, parse JSON response into draft courses
-
-**Batch 29** — Draft review screen, editable list, save as new schedule, toast
+### What Not to Add in Phase 10
+  No automatic saving without student confirmation
+  No persistent draft storage (draft exists only in memory during the session)
+  No batch re-processing after a failed parse (student re-uploads manually)
+  No multi-image support (one image per import session)
 
 ---
 

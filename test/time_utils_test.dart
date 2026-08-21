@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/utils/time_utils.dart';
-import '../lib/models/meeting_time_model.dart';
-import '../lib/constants/app_enums.dart';
+import 'package:iskeddy/utils/time_utils.dart';
+import 'package:iskeddy/models/meeting_time_model.dart';
+import 'package:iskeddy/constants/app_enums.dart';
 
 void main() {
   test('timeToMinutes', () {

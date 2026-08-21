@@ -151,13 +151,13 @@ class CourseCard extends StatelessWidget {
               children: [
                 AppPill(
                   label: meetingTime.classMode.label,
-                  fillColor: Colors.white.withOpacity(0.6),
+                  fillColor: Colors.white.withValues(alpha: 0.6),
                   textColor: accentColor,
                 ),
                 if (meetingTime.courseType != null)
                   AppPill(
                     label: meetingTime.courseType!.label,
-                    fillColor: Colors.white.withOpacity(0.6),
+                    fillColor: Colors.white.withValues(alpha: 0.6),
                     textColor: accentColor,
                   ),
               ],

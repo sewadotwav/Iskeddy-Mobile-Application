@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
+
 import 'package:intl/intl.dart';
 
 import '../constants/app_colors.dart';
@@ -152,7 +152,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
               onSurface: Colors.black,
               error: Colors.red,
             ),
-            dialogBackgroundColor: Colors.white,
+            dialogTheme: const DialogThemeData(backgroundColor: Colors.white),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
                 foregroundColor: Colors.black,
@@ -164,34 +164,34 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
             ),
             timePickerTheme: TimePickerThemeData(
               backgroundColor: Colors.white,
-              hourMinuteColor: MaterialStateColor.resolveWith((states) {
-                if (states.contains(MaterialState.selected)) {
+              hourMinuteColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
                   return Colors.black12;
                 }
                 return const Color(0xFFF2F2F2);
               }),
-              hourMinuteTextColor: MaterialStateColor.resolveWith((states) {
-                if (states.contains(MaterialState.selected)) {
+              hourMinuteTextColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
                   return Colors.black;
                 }
                 return Colors.black87;
               }),
-              dayPeriodColor: MaterialStateColor.resolveWith((states) {
-                if (states.contains(MaterialState.selected)) {
+              dayPeriodColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
                   return Colors.black;
                 }
                 return const Color(0xFFF2F2F2);
               }),
-              dayPeriodTextColor: MaterialStateColor.resolveWith((states) {
-                if (states.contains(MaterialState.selected)) {
+              dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
                   return Colors.white;
                 }
                 return Colors.black87;
               }),
               dialHandColor: Colors.black,
               dialBackgroundColor: const Color(0xFFF2F2F2),
-              dialTextColor: MaterialStateColor.resolveWith((states) {
-                if (states.contains(MaterialState.selected)) {
+              dialTextColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
                   return Colors.white;
                 }
                 return Colors.black87;
@@ -290,6 +290,7 @@ class _CourseEditorSheetState extends State<CourseEditorSheet> {
       );
       return;
     }
+    if (!mounted) return;
     Navigator.of(context).pop();
   }
 

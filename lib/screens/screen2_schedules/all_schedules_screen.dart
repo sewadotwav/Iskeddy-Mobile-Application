@@ -193,16 +193,17 @@ class _AllSchedulesScreenState extends State<AllSchedulesScreen> {
                                 onSelectToggle: () =>
                                     _toggleSelection(schedule.id),
                                 onDelete: () {
+                                  final ctx = context;
                                   ConfirmDialog.show(
-                                    context,
+                                    ctx,
                                     title: AppStrings.deleteScheduleTitle,
                                     message: AppStrings.deleteScheduleMessage,
                                     onConfirm: () async {
                                       await _firestoreService.deleteSchedule(
                                           _deviceId!, schedule.id);
-                                      if (!mounted) return;
+                                      if (!ctx.mounted) return;
                                       AppToast.show(
-                                          context, AppStrings.scheduleDeleted);
+                                          ctx, AppStrings.scheduleDeleted);
                                     },
                                   );
                                 },
@@ -216,14 +217,15 @@ class _AllSchedulesScreenState extends State<AllSchedulesScreen> {
             floatingActionButton: !isMultiSelect
                 ? FloatingActionButton(
                     onPressed: () async {
-                      final name = await NameScheduleDialog.show(context);
+                      final ctx = context;
+                      final name = await NameScheduleDialog.show(ctx);
                       if (name == null || name.trim().isEmpty) return;
                       final newId = await _firestoreService.createSchedule(
                           _deviceId!, name.trim());
-                      if (!mounted) return;
-                      AppToast.show(context, AppStrings.scheduleCreated);
+                      if (!ctx.mounted) return;
+                      AppToast.show(ctx, AppStrings.scheduleCreated);
                       Navigator.push(
-                        context,
+                        ctx,
                         MaterialPageRoute(
                           builder: (_) =>
                               ScheduleDetailScreen(scheduleId: newId),
@@ -279,8 +281,9 @@ class _AllSchedulesScreenState extends State<AllSchedulesScreen> {
                 onTap: selectedIds.isEmpty
                     ? () {}
                     : () {
+                        final ctx = context;
                         ConfirmDialog.show(
-                          context,
+                          ctx,
                           title:
                               AppStrings.bulkDeleteTitle(selectedIds.length),
                           message: AppStrings.bulkDeleteMessage,
@@ -289,9 +292,9 @@ class _AllSchedulesScreenState extends State<AllSchedulesScreen> {
                             await _firestoreService.deleteMultipleSchedules(
                               _deviceId!, selectedIds.toList());
                             _clearSelection();
-                            if (!mounted) return;
+                            if (!ctx.mounted) return;
                             AppToast.show(
-                                context, AppStrings.schedulesDeleted(count));
+                                ctx, AppStrings.schedulesDeleted(count));
                           },
                         );
                       },

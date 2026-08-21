@@ -181,8 +181,9 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                   onTap: selectedIds.isEmpty
                       ? () {}
                       : () {
+                          final ctx = context;
                           ConfirmDialog.show(
-                            context,
+                            ctx,
                             title: AppStrings.deleteCoursesTitle(selectedIds.length),
                             message: AppStrings.deleteCoursesMessage,
                             onConfirm: () async {
@@ -190,8 +191,8 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                               await FirestoreService().deleteMultipleCourses(
                                   _deviceId!, widget.scheduleId, selectedIds.toList());
                               _clearSelection();
-                              if (!mounted) return;
-                              AppToast.show(context, AppStrings.coursesDeleted(count));
+                              if (!ctx.mounted) return;
+                              AppToast.show(ctx, AppStrings.coursesDeleted(count));
                             },
                           );
                         },

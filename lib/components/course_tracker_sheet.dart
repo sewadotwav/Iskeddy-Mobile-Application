@@ -286,7 +286,7 @@ class _CourseTrackerSheetState extends State<CourseTrackerSheet> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$_effectiveAbsences / ${_maxAbsences}',
+                      '$_effectiveAbsences / $_maxAbsences',
                       style: appFont(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -471,12 +471,12 @@ class _CourseTrackerSheetState extends State<CourseTrackerSheet> {
       case TrackerStatus.atRisk:
         return AppPill(
             label: 'AT RISK — ${_state.remaining} ABSENCE(S) REMAINING',
-            fillColor: getCourseColor(widget.course).withOpacity(0.15),
+            fillColor: getCourseColor(widget.course).withValues(alpha: 0.15),
             icon: Icons.warning_amber_outlined);
       case TrackerStatus.dropped:
         return AppPill(
             label: 'DROPPED — LIMIT REACHED',
-            fillColor: getSaturatedCourseColor(widget.course).withOpacity(0.15),
+            fillColor: getSaturatedCourseColor(widget.course).withValues(alpha: 0.15),
             icon: Icons.cancel_outlined);
       case TrackerStatus.notSetUp:
         return const SizedBox();
