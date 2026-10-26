@@ -51,6 +51,7 @@ A class schedule maker and academic tracker designed for students, built with mo
 - **Course Detail Sheet** - Tap any course card to view a full detail sheet with meeting times, instructor/room info, real-time absence status, and a notes field.
 - **Course Notes** - Add and save custom multi-line notes to any individual course for quick reference.
 - **AI-Powered OCR Import** - Integrated Gemini Vision API to automatically parse detailed class schedules from multiple uploaded images or camera photos, with a full editable draft review flow before saving.
+- **Schedule Sharing & Import** - Share schedules with classmates as high-resolution PNG image cards (via `RepaintBoundary` and native share sheet) or as Base64 JSON export codes that can be copied and imported with a single tap.
 
 ### Backend & Infrastructure
 - **Firebase Firestore** - Robust NoSQL database for syncing user data transparently.

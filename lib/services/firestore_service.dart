@@ -34,6 +34,33 @@ class FirestoreService {
     return id;
   }
 
+  Future<String> createImportedSchedule(
+      String deviceId, String name, List<Course> courses) async {
+    final scheduleId = const Uuid().v4();
+    final batch = _db.batch();
+
+    batch.set(_schedulesRef(deviceId).doc(scheduleId), {
+      'id': scheduleId,
+      'name': name,
+      'isPinned': false,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    final coursesRef = _coursesRef(deviceId, scheduleId);
+    for (final course in courses) {
+      final courseId = const Uuid().v4();
+      final data = course.toMap();
+      data['id'] = courseId;
+      data['createdAt'] = FieldValue.serverTimestamp();
+      data['updatedAt'] = FieldValue.serverTimestamp();
+      batch.set(coursesRef.doc(courseId), data);
+    }
+
+    await batch.commit();
+    return scheduleId;
+  }
+
   Future<void> updateScheduleName(
       String deviceId, String scheduleId, String name) async {
     await _schedulesRef(deviceId).doc(scheduleId).update({

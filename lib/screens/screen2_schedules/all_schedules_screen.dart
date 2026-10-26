@@ -17,6 +17,7 @@ import '../../models/schedule_model.dart';
 import '../../models/course_model.dart';
 import '../../components/digital_clock.dart';
 import '../../components/schedule_heatmap.dart';
+import '../../components/import_schedule_dialog.dart';
 
 
 class AllSchedulesScreen extends StatefulWidget {
@@ -253,6 +254,12 @@ class _AllSchedulesScreenState extends State<AllSchedulesScreen> {
         ),
         const SizedBox(width: 12),
         AppPill(label: '${_schedules.length} ${AppStrings.schedulesCount}'),
+        const Spacer(),
+        CircularIconButton(
+          icon: Icons.file_download_outlined,
+          primary: false,
+          onTap: () => ImportScheduleDialog.show(context, deviceId: _deviceId!),
+        ),
       ],
     );
   }

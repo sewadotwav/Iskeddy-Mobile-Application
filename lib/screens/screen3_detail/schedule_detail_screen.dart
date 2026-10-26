@@ -16,6 +16,7 @@ import '../../services/device_id_service.dart';
 import '../../models/schedule_model.dart';
 import '../../models/course_model.dart';
 import '../../components/absence_tracker_sheet.dart';
+import '../../components/schedule_share_sheet.dart';
 import '../../utils/tracker_utils.dart';
 
 const Color kTextSecondary = Color(0xFF8A8A8A);
@@ -43,6 +44,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
 
   final ValueNotifier<bool> _isMultiSelectMode = ValueNotifier(false);
   final ValueNotifier<Set<String>> _selectedCourseIds = ValueNotifier({});
+  final GlobalKey _scheduleCanvasKey = GlobalKey();
 
   @override
   void initState() {
@@ -283,6 +285,17 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
                       AppToast.show(context, AppStrings.scheduleRenamed);
                     },
                   ),
+                  const SizedBox(width: 8),
+                  CircularIconButton(
+                    icon: Icons.share_outlined,
+                    primary: false,
+                    onTap: () => ScheduleShareSheet.show(
+                      context,
+                      schedule: schedule,
+                      courses: courses,
+                      canvasKey: _scheduleCanvasKey,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -344,122 +357,128 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> {
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
-          CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: SafeArea(
-                  bottom: false,
-                  child: isMultiSelect
-                      ? _buildMultiSelectHeader()
-                      : _buildNormalHeader(schedule, courses),
-                ),
-              ),
-              if (courses.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 20, right: 20, top: 20),
-                    child: Column(
-                      children: [
-                        Row(
+          RepaintBoundary(
+            key: _scheduleCanvasKey,
+            child: Container(
+              color: Colors.white,
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: SafeArea(
+                      bottom: false,
+                      child: isMultiSelect
+                          ? _buildMultiSelectHeader()
+                          : _buildNormalHeader(schedule, courses),
+                    ),
+                  ),
+                  if (courses.isNotEmpty) ...[
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 20, right: 20, top: 20),
+                        child: Column(
                           children: [
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: accentColor, width: 2),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            Row(
                               children: [
-                                Text(
-                                  'TOTAL HOURS',
-                                  style: appFont(fontSize: 10, fontWeight: FontWeight.w600, color: kTextSecondary),
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: accentColor, width: 2),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  formatTotalHours(courses),
-                                  style: appFont(fontSize: 22, fontWeight: FontWeight.w800, color: accentColor),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'TOTAL HOURS',
+                                      style: appFont(fontSize: 10, fontWeight: FontWeight.w600, color: kTextSecondary),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      formatTotalHours(courses),
+                                      style: appFont(fontSize: 22, fontWeight: FontWeight.w800, color: accentColor),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: accentColor, width: 2),
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'CLASS DAYS',
+                                      style: appFont(fontSize: 10, fontWeight: FontWeight.w600, color: kTextSecondary),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      formatClassDays(courses),
+                                      style: appFont(fontSize: 22, fontWeight: FontWeight.w800, color: accentColor),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: accentColor, width: 2),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'CLASS DAYS',
-                                  style: appFont(fontSize: 10, fontWeight: FontWeight.w600, color: kTextSecondary),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  formatClassDays(courses),
-                                  style: appFont(fontSize: 22, fontWeight: FontWeight.w800, color: accentColor),
-                                ),
-                              ],
-                            ),
+                          const SizedBox(height: 12),
+                          _AbsenceTrackerWidget(
+                            courses: courses,
+                            deviceId: _deviceId!,
+                            scheduleId: widget.scheduleId,
                           ),
-                        ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      _AbsenceTrackerWidget(
-                        courses: courses,
-                        deviceId: _deviceId!,
-                        scheduleId: widget.scheduleId,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                  child: _buildDayFilter(),
-                ),
-              ],
-              courses.isEmpty
-                  ? SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Center(
-                          child: EmptyState(
-                            icon: Icons.school_outlined,
-                            title: AppStrings.noCoursesTitle,
-                            subtitle: AppStrings.noCoursesSubtitle,
+                  SliverToBoxAdapter(
+                      child: _buildDayFilter(),
+                    ),
+                  ],
+                  courses.isEmpty
+                      ? SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Center(
+                              child: EmptyState(
+                                icon: Icons.school_outlined,
+                                title: AppStrings.noCoursesTitle,
+                                subtitle: AppStrings.noCoursesSubtitle,
+                              ),
+                            ),
+                          ),
+                        )
+                      : SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 20, right: 20, top: 16, bottom: 100),
+                            child: GroupedCourseList(
+                              courses: courses,
+                              scheduleId: widget.scheduleId,
+                              deviceId: _deviceId!,
+                              dayFilter: _selectedFilterDay,
+                              isMultiSelectMode: _isMultiSelectMode,
+                              selectedCourseIds: _selectedCourseIds,
+                              onSelectToggle: _toggleSelection,
+                              onLongPress: (id) {
+                                _isMultiSelectMode.value = true;
+                                _toggleSelection(id);
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                    )
-                  : SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 20, right: 20, top: 16, bottom: 100),
-                        child: GroupedCourseList(
-                          courses: courses,
-                          scheduleId: widget.scheduleId,
-                          deviceId: _deviceId!,
-                          dayFilter: _selectedFilterDay,
-                          isMultiSelectMode: _isMultiSelectMode,
-                          selectedCourseIds: _selectedCourseIds,
-                          onSelectToggle: _toggleSelection,
-                          onLongPress: (id) {
-                            _isMultiSelectMode.value = true;
-                            _toggleSelection(id);
-                          },
-                        ),
-                      ),
-                    ),
-            ],
+                ],
+              ),
+            ),
           ),
           if (!isMultiSelect)
             Positioned(

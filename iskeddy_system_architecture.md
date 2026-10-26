@@ -823,6 +823,16 @@ Batch 29 — Draft review screen:
   No batch re-processing after a failed parse (student re-uploads manually)
   No multi-image support (one image per import session)
 
+### Schedule Sharing & Import (Phase 11)
+- **Image Sharing (Option A)**:
+  - Wraps schedule detail view in `RepaintBoundary` with solid white background.
+  - Renders to 3.0 pixel ratio PNG via `boundary.toImage()`.
+  - Saves to temporary directory and invokes system share sheet via `share_plus`.
+- **JSON Code Export & Import (Option B)**:
+  - Serializes schedule metadata and courses into clean Base64 JSON strings.
+  - Decodes and validates JSON structures, generating fresh UUIDs to prevent collisions.
+  - Inserts imported schedule and all courses atomically using Firestore batch writes via `createImportedSchedule`.
+
 ---
 
 *End of Iskeddy System Architecture.*
