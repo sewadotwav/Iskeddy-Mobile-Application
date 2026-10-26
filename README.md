@@ -227,9 +227,9 @@ Check your device's network connection and verify that your Firestore security r
 **Solution:**
 Ensure you have created a `lib/config/secrets.dart` file (this file is ignored in version control for security) and defined `const String geminiApiKey = "YOUR_API_KEY";` inside it. We avoid using `.env` files and `dart-define` to ensure hot reloads and IDE play buttons work effortlessly without manual argument passing.
 
-#### Issue: "Gemini API returns a 404 (Model not found)"
+#### Issue: "Gemini API returns a 404 (Model not found) or 429 (Rate limit reached)"
 **Solution:**
-Older API keys may lack access to certain legacy models like `gemini-1.5-flash` or `gemini-2.5-flash`. We resolved this by explicitly targeting the newer supported preview model, `gemini-3.6-flash`. If you encounter a 404, check your Google AI Studio dashboard or run a Python script to list the models available to your specific key.
+Older API keys may lack access to retired models like `gemini-1.5-flash` or `gemini-2.5-flash`. The app uses `gemini-3.6-flash` with automatic fallback to `gemini-3.5-flash` and `gemini-3.8-flash`. Note that the Gemini Free Tier is subject to a 5 RPM (requests per minute) and 20 RPD (requests per day) limit; space out image uploads to stay within your quota.
 
 ---
 

@@ -730,9 +730,10 @@ Image is converted to base64 and sent as a multimodal message with this prompt:
   If a course meets at multiple different times, include it as
   multiple separate objects with the same title."
 
-Gemini model: gemini-1.5-flash (free tier).
-API key stored in a .env file and loaded via --dart-define-from-file=.env.
-Never hardcoded. Never committed to git.
+Gemini models: Primary `gemini-3.6-flash` with automatic fallback to `gemini-3.5-flash` / `gemini-3.8-flash` (free tier).
+Structured JSON output mode (`responseMimeType: 'application/json'`).
+API key stored in `lib/config/secrets.dart` (git-ignored).
+Never committed to git.
 
 Response parsing:
   Strip any markdown code fences if present before JSON.parse.

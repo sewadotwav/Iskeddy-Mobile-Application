@@ -22,17 +22,28 @@ class OcrImportScreen extends StatefulWidget {
 }
 
 class _OcrImportScreenState extends State<OcrImportScreen> {
-  List<File> _selectedImages = [];
+  final List<File> _selectedImages = [];
   bool _isProcessing = false;
+  String _processingStatus = 'Reading your schedule...';
   String? _errorMessage;
+
+  // Supported models prioritized by speed, availability, and stability
+  static const List<String> _candidateModels = [
+    'gemini-3.6-flash',
+    'gemini-3.5-flash',
+    'gemini-3.8-flash',
+  ];
 
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     
+    // Optimize maxWidth and imageQuality to reduce upload payload by 70-80%
+    // while preserving sharp typography and grid lines for OCR.
     if (source == ImageSource.gallery) {
       final pickedFiles = await picker.pickMultiImage(
-        imageQuality: 85,
-        maxWidth: 1920,
+        imageQuality: 75,
+        maxWidth: 1280,
+        maxHeight: 1280,
       );
       if (pickedFiles.isEmpty) return;
       setState(() {
@@ -42,8 +53,9 @@ class _OcrImportScreenState extends State<OcrImportScreen> {
     } else {
       final picked = await picker.pickImage(
         source: source,
-        imageQuality: 85,
-        maxWidth: 1920,
+        imageQuality: 75,
+        maxWidth: 1280,
+        maxHeight: 1280,
       );
       if (picked == null) return;
       setState(() {
@@ -61,6 +73,7 @@ class _OcrImportScreenState extends State<OcrImportScreen> {
 
     setState(() {
       _isProcessing = true;
+      _processingStatus = 'Preparing schedule images...';
       _errorMessage = null;
     });
 
@@ -78,20 +91,15 @@ class _OcrImportScreenState extends State<OcrImportScreen> {
         imageParts.add(DataPart(mimeType, imageBytes));
       }
 
-      // 3. Initialise the Gemini model
+      // Check Gemini API key
       if (geminiApiKey.isEmpty || geminiApiKey == 'YOUR_GEMINI_API_KEY_HERE') {
         throw Exception('Paste your Gemini API key into lib/config/secrets.dart');
       }
 
-      final model = GenerativeModel(
-        model: 'gemini-3.6-flash',
-        apiKey: geminiApiKey,
-      );
-
-      // 4. Build the prompt — exact wording is critical for consistent output
+      // Prompt optimized for direct, clean JSON extraction
       const prompt = '''
 Extract all course/subject schedule information from the provided image(s).
-Return ONLY a valid JSON array. No explanation, no markdown fences, no extra text.
+Return ONLY a valid JSON array.
 Each element must have these exact keys:
   "title": string (required, the course or subject name),
   "days": array of strings — use only these exact values: Mon Tue Wed Thu Fri Sat Sun,
@@ -105,36 +113,92 @@ separate objects with the same title but different days/startTime/endTime.
 If you cannot determine a value, use null. Never omit a key.
 ''';
 
-      // 5. Send to Gemini as a multimodal request
-      final response = await model.generateContent([
-        Content.multi([
-          ...imageParts,
-          TextPart(prompt),
-        ]),
-      ]);
+      setState(() {
+        _processingStatus = 'Analyzing timetable with Gemini AI...';
+      });
+
+      // Attempt candidate models with automatic fallback if one model is overloaded (503) or not found (404)
+      GenerateContentResponse? response;
+      Object? lastError;
+
+      for (final modelName in _candidateModels) {
+        try {
+          debugPrint('Attempting OCR with model: $modelName');
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: geminiApiKey,
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+              temperature: 0.1,
+            ),
+          );
+
+          response = await model.generateContent([
+            Content.multi([
+              ...imageParts,
+              TextPart(prompt),
+            ]),
+          ]);
+          // Success, exit fallback loop
+          break;
+        } catch (e) {
+          lastError = e;
+          debugPrint('Model $modelName failed: $e');
+          // If rate limit (429) was hit, don't cascade since quota applies to the key
+          final errStr = e.toString();
+          if (errStr.contains('429') || errStr.contains('RESOURCE_EXHAUSTED')) {
+            rethrow;
+          }
+          // Continue to next candidate model if available
+        }
+      }
+
+      if (response == null) {
+        throw lastError ?? Exception('All Gemini models failed to respond.');
+      }
 
       final rawText = response.text;
       if (rawText == null || rawText.trim().isEmpty) {
         throw Exception('Empty response from Gemini.');
       }
 
-      // 6. Strip markdown code fences if Gemini added them despite instructions
+      setState(() {
+        _processingStatus = 'Structuring courses and schedules...';
+      });
+
+      // Strip any markdown code fences if present
       final cleaned = rawText
-          .replaceAll(RegExp(r'```json\s*'), '')
-          .replaceAll(RegExp(r'```\s*'), '')
+          .replaceAll(RegExp(r'^```json\s*', multiLine: true), '')
+          .replaceAll(RegExp(r'^```\s*', multiLine: true), '')
+          .replaceAll(RegExp(r'```$', multiLine: true), '')
           .trim();
 
-      // 7. Parse JSON
-      final List<dynamic> parsed = jsonDecode(cleaned) as List<dynamic>;
+      // Robust JSON decode handling both direct list and wrapped objects
+      final dynamic decoded = jsonDecode(cleaned);
+      final List<dynamic> parsed;
+      if (decoded is List) {
+        parsed = decoded;
+      } else if (decoded is Map<String, dynamic>) {
+        final listKey = decoded.keys.firstWhere(
+          (k) => decoded[k] is List,
+          orElse: () => '',
+        );
+        if (listKey.isNotEmpty) {
+          parsed = decoded[listKey] as List<dynamic>;
+        } else {
+          parsed = [decoded];
+        }
+      } else {
+        throw const FormatException('Expected a JSON array of courses.');
+      }
 
       if (parsed.isEmpty) {
         throw Exception('No courses found in the image.');
       }
 
-      // 8. Convert to DraftCourse list with auto-assigned colors
+      // Convert to DraftCourse list with auto-assigned colors
       final draftCourses = _parseToDraftCourses(parsed);
 
-      // 9. Navigate to draft review — push so student can go back
       if (!mounted) return;
       setState(() => _isProcessing = false);
 
@@ -144,8 +208,7 @@ If you cannot determine a value, use null. Never omit a key.
         ),
       );
 
-      // 10. After returning from DraftReviewScreen, reset to upload state
-      //     so the student can start a new import if needed
+      // Reset on return
       if (mounted) {
         setState(() {
           _selectedImages.clear();
@@ -154,32 +217,52 @@ If you cannot determine a value, use null. Never omit a key.
       }
 
     } on FormatException catch (e) {
-      // JSON parse failure
       debugPrint('JSON Parse Error: $e');
       if (!mounted) return;
-      AppToast.show(context, 'Parsing failed. Please try a clearer image.');
+      const userMsg = 'Could not read schedule structure. Please try a clearer image.';
+      AppToast.show(context, userMsg);
       setState(() {
         _isProcessing = false;
-        _errorMessage =
-          'Could not read the schedule format. Try a clearer image.';
+        _errorMessage = userMsg;
       });
     } catch (e, stack) {
       debugPrint('OCR Processing Error: $e');
       debugPrint('Stacktrace: $stack');
       if (!mounted) return;
       
-      final msg = e.toString().contains('GEMINI_API_KEY is not set') 
-          ? 'API Key is missing.' 
-          : 'Error processing image. Check connection.';
-          
-      AppToast.show(context, msg);
+      final friendlyMsg = _friendlyErrorMessage(e);
+      AppToast.show(context, friendlyMsg);
       setState(() {
         _isProcessing = false;
-        _errorMessage = e.toString().contains('GEMINI_API_KEY is not set')
-            ? 'Developer Error: GEMINI_API_KEY is missing in environment variables.'
-            : 'Could not process the image. Check your connection and try again.';
+        _errorMessage = friendlyMsg;
       });
     }
+  }
+
+  String _friendlyErrorMessage(Object error) {
+    final str = error.toString();
+    if (str.contains('Paste your Gemini API key') ||
+        str.contains('GEMINI_API_KEY is not set') ||
+        str.contains('API_KEY_INVALID') ||
+        str.contains('API key not valid')) {
+      return 'Gemini API key is missing or invalid. Check lib/config/secrets.dart.';
+    }
+    if (str.contains('429') || str.contains('RESOURCE_EXHAUSTED')) {
+      return 'Rate limit reached (Free tier: 5 requests/min, 20/day). Please wait a moment and try again.';
+    }
+    if (str.contains('503') || str.contains('UNAVAILABLE')) {
+      return 'Gemini AI servers are currently experiencing high demand. Please try again in a few moments.';
+    }
+    if (str.contains('404') || str.contains('NOT_FOUND')) {
+      return 'Configured Gemini model was retired or not found. Please verify available models.';
+    }
+    if (str.contains('SocketException') ||
+        str.contains('Failed host lookup') ||
+        str.contains('NetworkException') ||
+        str.contains('ClientException')) {
+      return 'Network connection failed. Please check your internet connection.';
+    }
+    return 'Could not process the timetable image. Please try again.';
   }
 
   List<DraftCourse> _parseToDraftCourses(List<dynamic> parsed) {
@@ -287,8 +370,9 @@ If you cannot determine a value, use null. Never omit a key.
               const CircularProgressIndicator(color: accentColor, strokeWidth: 2),
               const SizedBox(height: 16),
               Text(
-                'Reading your schedule...',
+                _processingStatus,
                 style: appFont(fontSize: 14, color: const Color(0xFF8A8A8A)),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
@@ -318,7 +402,7 @@ If you cannot determine a value, use null. Never omit a key.
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: _selectedImages.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    separatorBuilder: (_, _) => const SizedBox(width: 12),
                     itemBuilder: (context, index) {
                       return Stack(
                         children: [
